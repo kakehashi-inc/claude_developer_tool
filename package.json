@@ -1,7 +1,7 @@
 {
-  "name": "mcp-server-manager",
-  "version": "0.2.0",
-  "description": "MCP Server Process Manager GUI",
+  "name": "claude-developer-tool",
+  "version": "0.1.0",
+  "description": "Claude Developer Tool GUI",
   "main": "dist/main/index.js",
   "engines": {
     "node": ">=22.0.0",
@@ -25,10 +25,9 @@
     "clean": "rimraf dist release node_modules/.cache"
   },
   "keywords": [
-    "mcp",
-    "server",
-    "process",
-    "manager"
+    "claude",
+    "developer",
+    "tool"
   ],
   "author": "",
   "license": "MIT",
