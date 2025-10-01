@@ -241,7 +241,7 @@ export const ClaudeDesktopManager: React.FC = () => {
                                     <TableCell>{t('claudeDesktop.serverName')}</TableCell>
                                     <TableCell>{t('claudeDesktop.command')}</TableCell>
                                     <TableCell>{t('claudeDesktop.args')}</TableCell>
-                                    <TableCell width='100'>{t('claudeDesktop.actions')}</TableCell>
+                                    <TableCell width='120'>{t('claudeDesktop.actions')}</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -279,11 +279,11 @@ export const ClaudeDesktopManager: React.FC = () => {
                                         <TableCell>
                                             <Tooltip title={t('claudeDesktop.disable')}>
                                                 <IconButton
-                                                    size='medium'
+                                                    size='large'
                                                     color='success'
                                                     onClick={() => handleDisable(server.name)}
                                                 >
-                                                    <EnableIcon sx={{ fontSize: 32 }} />
+                                                    <EnableIcon sx={{ fontSize: 40 }} />
                                                 </IconButton>
                                             </Tooltip>
                                         </TableCell>
@@ -316,7 +316,7 @@ export const ClaudeDesktopManager: React.FC = () => {
                                     <TableCell>{t('claudeDesktop.serverName')}</TableCell>
                                     <TableCell>{t('claudeDesktop.command')}</TableCell>
                                     <TableCell>{t('claudeDesktop.args')}</TableCell>
-                                    <TableCell width='100'>{t('claudeDesktop.actions')}</TableCell>
+                                    <TableCell width='120'>{t('claudeDesktop.actions')}</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -354,11 +354,11 @@ export const ClaudeDesktopManager: React.FC = () => {
                                         <TableCell>
                                             <Tooltip title={t('claudeDesktop.enable')}>
                                                 <IconButton
-                                                    size='medium'
+                                                    size='large'
                                                     color='error'
                                                     onClick={() => handleEnable(server.name)}
                                                 >
-                                                    <DisableIcon sx={{ fontSize: 32 }} />
+                                                    <DisableIcon sx={{ fontSize: 40 }} />
                                                 </IconButton>
                                             </Tooltip>
                                         </TableCell>

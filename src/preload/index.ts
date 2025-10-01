@@ -38,6 +38,8 @@ const api = {
         getTheme: (): Promise<'light' | 'dark'> => ipcRenderer.invoke('system:get-theme'),
 
         getLocale: (): Promise<string> => ipcRenderer.invoke('system:get-locale'),
+
+        getVersion: (): Promise<string> => ipcRenderer.invoke('system:get-version'),
     },
 };
 

@@ -30,9 +30,14 @@ export const TitleBar: React.FC = () => {
     const [isMaximized, setIsMaximized] = useState(false);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [langMenuAnchor, setLangMenuAnchor] = useState<null | HTMLElement>(null);
+    const [appVersion, setAppVersion] = useState<string>('');
 
     useEffect(() => {
         window.api.window.isMaximized().then(setIsMaximized);
+        window.api.system
+            .getVersion()
+            .then(setAppVersion)
+            .catch(() => setAppVersion(''));
     }, []);
 
     const handleMinimize = () => {
@@ -104,15 +109,17 @@ export const TitleBar: React.FC = () => {
                 >
                     {t('app.title')}
                 </Typography>
-                <Typography
-                    variant='caption'
-                    sx={{
-                        color: 'text.secondary',
-                        fontSize: '0.75rem',
-                    }}
-                >
-                    v0.1.0
-                </Typography>
+                {appVersion && (
+                    <Typography
+                        variant='caption'
+                        sx={{
+                            color: 'text.secondary',
+                            fontSize: '0.75rem',
+                        }}
+                    >
+                        v{appVersion}
+                    </Typography>
+                )}
             </Box>
 
             {/* 右側：ツールメニュー */}

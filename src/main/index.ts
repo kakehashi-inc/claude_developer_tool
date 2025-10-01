@@ -9,6 +9,7 @@ let mainWindow: BrowserWindow | null = null;
 let claudeDesktopManager: ClaudeDesktopManager;
 
 const isDev = process.argv.includes('--dev');
+const gotTheLock = app.requestSingleInstanceLock();
 
 function createWindow(): void {
     mainWindow = new BrowserWindow({
@@ -40,33 +41,47 @@ function createWindow(): void {
     });
 }
 
-app.whenReady().then(() => {
-    // Claude Desktop Managerを初期化
-    claudeDesktopManager = new ClaudeDesktopManager();
-
-    // IPCハンドラーを登録
-    registerClaudeDesktopHandlers(claudeDesktopManager);
-    registerWindowHandlers();
-    registerSystemHandlers();
-
-    createWindow();
-
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
+if (!gotTheLock) {
+    app.quit();
+} else {
+    app.on('second-instance', () => {
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+        } else {
             createWindow();
         }
     });
-});
 
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
-});
+    app.whenReady().then(() => {
+        // Claude Desktop Managerを初期化
+        claudeDesktopManager = new ClaudeDesktopManager();
 
-// 開発モードでのホットリロード
-if (isDev) {
-    ipcMain.on('reload', () => {
-        mainWindow?.reload();
+        // IPCハンドラーを登録
+        registerClaudeDesktopHandlers(claudeDesktopManager);
+        registerWindowHandlers();
+        registerSystemHandlers();
+
+        createWindow();
+
+        app.on('activate', () => {
+            if (BrowserWindow.getAllWindows().length === 0) {
+                createWindow();
+            }
+        });
     });
+
+    app.on('window-all-closed', () => {
+        if (process.platform !== 'darwin') {
+            app.quit();
+        }
+    });
+
+    // 開発モードでのホットリロード
+    if (isDev) {
+        ipcMain.on('reload', () => {
+            mainWindow?.reload();
+        });
+    }
 }

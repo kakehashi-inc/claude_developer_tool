@@ -10,4 +10,9 @@ export function registerSystemHandlers(): void {
     ipcMain.handle('system:get-locale', () => {
         return app.getLocale();
     });
+
+    // アプリバージョンを取得
+    ipcMain.handle('system:get-version', () => {
+        return app.getVersion();
+    });
 }
