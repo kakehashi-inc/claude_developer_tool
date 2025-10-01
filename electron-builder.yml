@@ -1,0 +1,91 @@
+appId: com.claude_developer_tool.app
+productName: Claude Developer Tool
+directories:
+  output: release
+  buildResources: build
+artifactName: "cdt-${version}-${os}-${arch}.${ext}"
+portable:
+  artifactName: "cdt-${version}-${os}-${arch}-portable.${ext}"
+publish:
+  provider: github
+  owner: kakehashi-inc
+  repo: https://github.com/kakehashi-inc/claude_developer_tool.git
+  releaseType: release
+releaseInfo:
+  releaseName: "v${version}"
+  releaseNotes: |
+    ## New Features
+
+    - nothing
+
+    ## Bug Fixes
+
+    - nothing
+
+files:
+  - dist/**/*
+  - public/**/*
+  - "!**/*.ts"
+  - "!**/*.tsx"
+  - "!**/*.map"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+  - "!**/node_modules/*.d.ts"
+  - "!**/node_modules/.bin"
+
+win:
+  icon: public/icon.ico
+  executableName: cdt
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - arm64
+    - target: portable
+      arch:
+        - x64
+        - arm64
+
+nsis:
+  shortcutName: Claude Dev Tool
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  deleteAppDataOnUninstall: true
+
+mac:
+  category: public.app-category.developer-tools
+  icon: public/icon.png
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+
+linux:
+  icon: public/icon.png
+  category: Development
+  target:
+    - target: AppImage
+      arch:
+        - x64
+        - arm64
+    - target: deb
+      arch:
+        - x64
+        - arm64
+    - target: rpm
+      arch:
+        - x64
+        - arm64
+  desktop:
+    entry:
+      Name: Claude Developer Tool
+      Comment: Claude Developer Tool
+      Categories: Development;
