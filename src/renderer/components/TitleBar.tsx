@@ -94,17 +94,26 @@ export const TitleBar: React.FC = () => {
             }}
         >
             {/* タイトル */}
-            <Typography
-                variant='body1'
-                sx={{
-                    flexGrow: 1,
-                    ml: 2,
-                    fontWeight: 500,
-                    fontSize: '0.95rem',
-                }}
-            >
-                {t('app.title')}
-            </Typography>
+            <Box sx={{ flexGrow: 1, ml: 2, display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                <Typography
+                    variant='body1'
+                    sx={{
+                        fontWeight: 500,
+                        fontSize: '0.95rem',
+                    }}
+                >
+                    {t('app.title')}
+                </Typography>
+                <Typography
+                    variant='caption'
+                    sx={{
+                        color: 'text.secondary',
+                        fontSize: '0.75rem',
+                    }}
+                >
+                    v0.1.0
+                </Typography>
+            </Box>
 
             {/* 右側：ツールメニュー */}
             <Box sx={{ display: 'flex', alignItems: 'center', WebkitAppRegion: 'no-drag' }}>
