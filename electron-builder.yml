@@ -48,6 +48,7 @@ win:
 
 nsis:
   shortcutName: Claude Dev Tool
+  buildUniversalInstaller: false
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
@@ -87,5 +88,5 @@ linux:
   desktop:
     entry:
       Name: Claude Developer Tool
-      Comment: Claude Developer Tool
+      Comment: "Manage Claude Desktop MCP servers: auto-detect configs, enable/disable, drag-and-drop reorder; JA/EN i18n, light/dark themes"
       Categories: Development;
