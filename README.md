@@ -94,10 +94,6 @@ src/
 - i18next
 - Vite
 
-## License
-
-MIT
-
 ## For Developers
 
 ### Execution Modes
