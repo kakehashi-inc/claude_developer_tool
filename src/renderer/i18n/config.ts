@@ -1,14 +1,14 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import en from './locales/en';
-import ja from './locales/ja';
+import jaTranslations from './locales/ja';
+import enTranslations from './locales/en';
 
 i18n.use(initReactI18next).init({
     resources: {
-        en,
-        ja,
+        ja: { translation: jaTranslations },
+        en: { translation: enTranslations },
     },
-    lng: 'ja', // デフォルトは日本語
+    lng: 'en',
     fallbackLng: 'en',
     interpolation: {
         escapeValue: false,
