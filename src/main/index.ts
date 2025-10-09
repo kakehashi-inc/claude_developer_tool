@@ -30,7 +30,22 @@ function createWindow(): void {
     if (isDev) {
         // 開発モード: Viteサーバーに接続
         mainWindow.loadURL('http://localhost:3001');
-        mainWindow.webContents.openDevTools({ mode: 'detach' });
+        // Ensure DevTools are visible in development
+        try {
+            mainWindow.webContents.openDevTools({ mode: 'detach' });
+        } catch {}
+        // Keyboard shortcuts to toggle DevTools without menu
+        mainWindow.webContents.on('before-input-event', (event, input) => {
+            const isToggleCombo =
+                (input.key?.toLowerCase?.() === 'i' && (input.control || input.meta) && input.shift) ||
+                input.key === 'F12';
+            if (isToggleCombo) {
+                event.preventDefault();
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.toggleDevTools();
+                }
+            }
+        });
     } else {
         // 本番モード: ビルドされたファイルをロード
         mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
