@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { join } from 'path';
 import { ClaudeDesktopManager } from './services/ClaudeDesktopManager';
 import { registerClaudeDesktopHandlers } from './ipc/claudeDesktopHandlers';
@@ -8,7 +8,7 @@ import { registerSystemHandlers } from './ipc/systemHandlers';
 let mainWindow: BrowserWindow | null = null;
 let claudeDesktopManager: ClaudeDesktopManager;
 
-const isDev = process.argv.includes('--dev');
+const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
 const gotTheLock = app.requestSingleInstanceLock();
 
 function createWindow(): void {
@@ -92,11 +92,4 @@ if (!gotTheLock) {
             app.quit();
         }
     });
-
-    // 開発モードでのホットリロード
-    if (isDev) {
-        ipcMain.on('reload', () => {
-            mainWindow?.reload();
-        });
-    }
 }
