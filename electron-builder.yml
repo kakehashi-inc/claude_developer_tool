@@ -6,6 +6,7 @@ directories:
 artifactName: "cdt-${version}-${os}-${arch}.${ext}"
 portable:
   artifactName: "cdt-${version}-${os}-${arch}-portable.${ext}"
+  buildUniversalInstaller: false
 publish:
   provider: github
   owner: kakehashi-inc
