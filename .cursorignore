@@ -29,4 +29,3 @@ vendor/
 # プロジェクト固有
 dist/
 release/
-build/
