@@ -17,14 +17,9 @@
 
 - Windows 10/11
 - macOS 10.15+
-- Linux (Ubuntu/Debian, RHEL/CentOS/Fedora)
+- Linux (Ubuntu/Debian 対応予定)
 
-各OSのClaude Desktop設定ファイルパス:
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Linux: `~/.config/Claude/claude_desktop_config.json`
-
-## セットアップ
+## 開発環境
 
 ### 必要環境
 
@@ -51,7 +46,7 @@ yarn dev
 - DevToolsは自動的に別ウィンドウで開きます
 - F12 または Ctrl+Shift+I (macOSではCmd+Option+I) で切り替え可能
 
-## ビルド/配布
+### ビルド/配布
 
 - すべてのプラットフォーム: `yarn dist`
 - Windows: `yarn dist:win`
@@ -60,7 +55,7 @@ yarn dev
 
 開発モードでは `http://localhost:3001` でBrowserRouterを使用し、本番モードでは `dist/renderer/index.html` をHashRouterで読み込みます。
 
-### Windows前提条件: 開発者モード
+#### Windows前提条件: 開発者モード
 
 Windowsで署名なしのローカルビルドを実行する場合は、開発者モードを有効にしてください：
 
@@ -70,7 +65,7 @@ Windowsで署名なしのローカルビルドを実行する場合は、開発�
 
 注意: アプリはWindows上で署名されていません。SmartScreenが警告を表示する場合は「詳細情報」→「実行」をクリックしてください。
 
-## プロジェクト構造（抜粋）
+### プロジェクト構造（抜粋）
 
 ```text
 src/
@@ -85,7 +80,7 @@ src/
 └── public/                # アイコン
 ```
 
-## 技術スタック
+### 技術スタック
 
 - Electron
 - React (MUI v7)
@@ -93,8 +88,6 @@ src/
 - Zustand
 - i18next
 - Vite
-
-## 開発者向け情報
 
 ### 実行モード
 

@@ -17,14 +17,9 @@ English | [日本語](README-ja.md)
 
 - Windows 10/11
 - macOS 10.15+
-- Linux (Ubuntu/Debian, RHEL/CentOS/Fedora)
+- Linux (Ubuntu/Debian planned)
 
-Claude Desktop configuration file paths for each OS:
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Linux: `~/.config/Claude/claude_desktop_config.json`
-
-## Setup
+## Development Environment
 
 ### Requirements
 
@@ -32,7 +27,7 @@ Claude Desktop configuration file paths for each OS:
 - yarn 4
 - Git
 
-### Install
+### Installation
 
 ```bash
 # Clone the repository
@@ -51,7 +46,7 @@ DevTools in development:
 - DevTools open in detached mode automatically
 - Toggle with F12 or Ctrl+Shift+I (Cmd+Option+I on macOS)
 
-## Build/Distribute
+### Build/Distribution
 
 - All platforms: `yarn dist`
 - Windows: `yarn dist:win`
@@ -60,7 +55,7 @@ DevTools in development:
 
 In development the app uses BrowserRouter with `http://localhost:3001`, and in production it uses HashRouter to load `dist/renderer/index.html`.
 
-### Windows prerequisite: Developer Mode
+#### Windows prerequisite: Developer Mode
 
 When building or running unsigned local releases on Windows, enable Developer Mode:
 
@@ -70,7 +65,7 @@ When building or running unsigned local releases on Windows, enable Developer Mo
 
 Note: The app is not code-signed on Windows. SmartScreen may show a warning; click "More info" → "Run anyway".
 
-## Project Structure (excerpt)
+### Project Structure (excerpt)
 
 ```text
 src/
@@ -85,7 +80,7 @@ src/
 └── public/                # Icons
 ```
 
-## Tech Stack
+### Tech Stack
 
 - Electron
 - React (MUI v7)
@@ -93,8 +88,6 @@ src/
 - Zustand
 - i18next
 - Vite
-
-## For Developers
 
 ### Execution Modes
 
