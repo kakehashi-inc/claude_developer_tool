@@ -17,7 +17,7 @@
 
 - Windows 10/11
 - macOS 10.15+
-- Linux (Ubuntu/Debian 対応予定)
+- Linux (予定)
 
 ## 開発環境
 

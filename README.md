@@ -17,7 +17,7 @@ English | [日本語](README-ja.md)
 
 - Windows 10/11
 - macOS 10.15+
-- Linux (Ubuntu/Debian planned)
+- Linux (planned)
 
 ## Development Environment
 
