@@ -34,6 +34,7 @@ export const getClaudeExecutablePaths = (): string[] => {
             join(homedir(), 'Applications', 'Claude.app', 'Contents', 'MacOS', 'Claude'),
             '/Applications/Claude.app/Contents/MacOS/Claude',
         ];
+    } else {
+        return ['/usr/bin/claude', '/usr/local/bin/claude', join(homedir(), '.local', 'bin', 'claude')];
     }
-    return [];
 };

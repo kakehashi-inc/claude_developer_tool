@@ -25,13 +25,11 @@ export class ClaudeDesktopManager {
         this.configPath = join(this.configDir, CLAUDE_CONFIG_FILENAME);
         this.disabledConfigPath = join(this.configDir, CLAUDE_CONFIG_DISABLED_FILENAME);
 
-        if (this.platform === 'win32' || this.platform === 'darwin') {
-            const execPaths = getClaudeExecutablePaths();
-            for (const execPath of execPaths) {
-                if (existsSync(execPath)) {
-                    this.claudeExecutable = execPath;
-                    break;
-                }
+        const execPaths = getClaudeExecutablePaths();
+        for (const execPath of execPaths) {
+            if (existsSync(execPath)) {
+                this.claudeExecutable = execPath;
+                break;
             }
         }
     }
@@ -217,12 +215,53 @@ export class ClaudeDesktopManager {
     /**
      * Claude Desktopプロセスを終了
      */
-    private async killClaudeDesktop(): Promise<void> {
-        if (this.platform === 'win32') {
-            await execAsync('taskkill /F /IM Claude.exe');
-        } else if (this.platform === 'darwin') {
-            await execAsync('pkill -9 "Claude"');
+    /**
+     * Claude Desktopが実行中か確認
+     */
+    private async isClaudeRunning(): Promise<boolean> {
+        try {
+            if (this.platform === 'win32') {
+                const { stdout } = await execAsync('tasklist /FI "IMAGENAME eq Claude.exe" /NH');
+                return stdout.includes('Claude.exe');
+            } else {
+                await execAsync('pgrep -x -i "claude"');
+                return true;
+            }
+            return false;
+        } catch {
+            return false;
         }
+    }
+
+    /**
+     * Claude Desktopプロセスを終了
+     */
+    private async killClaudeDesktop(): Promise<void> {
+        // 終了シグナルを送信
+        try {
+            if (this.platform === 'win32') {
+                await execAsync('taskkill /IM Claude.exe');
+            } else {
+                await execAsync('pkill -x -i "claude"');
+            }
+        } catch (error) {
+            // プロセスが既に存在しない場合などは無視
+        }
+
+        // プロセス終了を待機（最大10秒）
+        const startTime = Date.now();
+        const timeout = 10000;
+
+        while (Date.now() - startTime < timeout) {
+            const isRunning = await this.isClaudeRunning();
+            if (!isRunning) {
+                return;
+            }
+            // 500ms待機
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        console.warn('Claude Desktop did not exit within timeout');
     }
 
     /**
@@ -233,10 +272,11 @@ export class ClaudeDesktopManager {
             throw new Error('Claude Desktop executable not found');
         }
 
-        if (this.platform === 'win32') {
-            spawn(this.claudeExecutable, [], { detached: true, stdio: 'ignore' }).unref();
-        } else if (this.platform === 'darwin') {
+        if (this.platform === 'darwin') {
             spawn('open', ['-a', this.claudeExecutable], { detached: true, stdio: 'ignore' }).unref();
+        } else {
+            // Windows and Linux
+            spawn(this.claudeExecutable, [], { detached: true, stdio: 'ignore' }).unref();
         }
     }
 
@@ -244,17 +284,7 @@ export class ClaudeDesktopManager {
      * Claude Desktopを再起動
      */
     async restartClaudeDesktop(): Promise<void> {
-        if (this.platform !== 'win32' && this.platform !== 'darwin') {
-            throw new Error('Restart is only supported on Windows and macOS');
-        }
-
-        try {
-            await this.killClaudeDesktop();
-        } catch (error) {
-            // 終了エラーは無視
-        }
-        // プロセスが完全に終了するまで待機
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await this.killClaudeDesktop();
         await this.startClaudeDesktop();
     }
 }
