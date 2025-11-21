@@ -14,6 +14,7 @@ import {
     Menu as MenuIcon,
     Minimize as MinimizeIcon,
     CropSquare as MaximizeIcon,
+    FullscreenExit as RestoreIcon,
     Close as CloseIcon,
     Storage as StorageIcon,
     PowerSettingsNew as ExitIcon,
@@ -256,7 +257,7 @@ export const TitleBar: React.FC = () => {
                         },
                     }}
                 >
-                    <MaximizeIcon />
+                    {isMaximized ? <RestoreIcon /> : <MaximizeIcon />}
                 </IconButton>
                 <IconButton
                     size='medium'
