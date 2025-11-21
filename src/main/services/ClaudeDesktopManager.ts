@@ -250,15 +250,11 @@ export class ClaudeDesktopManager {
 
         try {
             await this.killClaudeDesktop();
-            // プロセスが完全に終了するまで待機
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await this.startClaudeDesktop();
         } catch (error) {
-            // Claude Desktopが起動していない場合のエラーは無視して起動のみ試行
-            if (error instanceof Error && !error.message.includes('not found')) {
-                throw error;
-            }
-            await this.startClaudeDesktop();
+            // 終了エラーは無視
         }
+        // プロセスが完全に終了するまで待機
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await this.startClaudeDesktop();
     }
 }
