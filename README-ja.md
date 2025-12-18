@@ -29,12 +29,6 @@ MCPサーバーを無効化すると、`claude_desktop_config.json` から該当
 
 無効化されたMCPサーバーを有効化すると、`claude_desktop_config_disabled.json` から `claude_desktop_config.json` に設定が戻されます。
 
-### Windowsアイコンの作成
-
-```exec
-magick public/icon.png -define icon:auto-resize=256,128,96,64,48,32,24,16 public/icon.ico
-```
-
 ## 開発者向けリファレンス
 
 ### 開発ルール
