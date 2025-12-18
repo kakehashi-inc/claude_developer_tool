@@ -1,6 +1,3 @@
----
-alwaysApply: true
----
 <context_gathering>
 Goal: Get enough context fast. Parallelize discovery and stop as soon as you can act.
 
@@ -57,7 +54,8 @@ Loop:
 </code_editing_rules>
 
 <project_details>
-<project_description>
-[README.md](README.md)
-</project_description>
+<instruction>
+CRITICAL: You MUST read the current content of [README-ja.md](README-ja.md) BEFORE taking any action.
+You MUST strictly adhere to the "Development Rules" (開発ルール) section within README-ja.md.
+</instruction>
 </project_details>
