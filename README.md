@@ -1,6 +1,6 @@
 # Claude Developer Tool
 
-An Electron-based GUI tool for developers, including utilities for Claude Desktop.
+An Electron-based GUI tool for developers, providing various utilities for Claude Desktop.
 
 English | [日本語](README-ja.md)
 
@@ -17,9 +17,29 @@ English | [日本語](README-ja.md)
 
 - Windows 10/11
 - macOS 10.15+
-- Linux (planned)
+- Linux (Debian-based/RHEL-based)
 
-## Development Environment
+Note: This project is not code-signed on Windows. If SmartScreen displays a warning, click "More info" → "Run anyway".
+
+### Disabling MCP Servers
+
+When you disable an MCP server, its configuration is removed from `claude_desktop_config.json` and moved to `claude_desktop_config_disabled.json` in the same directory. The configuration is moved as-is without modification.
+
+### Enabling MCP Servers
+
+When you enable a disabled MCP server, the configuration is moved back from `claude_desktop_config_disabled.json` to `claude_desktop_config.json`.
+
+## Developer Reference
+
+### Development Rules
+
+- Developer documentation should be placed in the `Documents` directory, except for `README.md`.
+- Always run the linter after making changes and apply appropriate fixes. If intentionally allowing lint errors, document this in a comment. **Building is only for releases; linting is sufficient for debugging.**
+- When implementing models, place files on a per-table basis.
+- Create files in the `modules` directory for componentized implementations.
+- Place temporary scripts (e.g., investigation scripts) in the `scripts` directory.
+- When creating or modifying models, update `Documents/Table Definitions.md`. Table definitions should be expressed as tables, with column names, types, and relations within the table.
+- When system behavior changes, update `Documents/System Specifications.md`.
 
 ### Requirements
 
@@ -32,12 +52,12 @@ English | [日本語](README-ja.md)
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd claude_developer_tool
+cd <repository-name>
 
 # Install dependencies
 yarn install
 
-# Start development (main: tsc -w / renderer: Vite / Electron)
+# Start development
 yarn dev
 ```
 
@@ -53,17 +73,15 @@ DevTools in development:
 - macOS: `yarn dist:mac`
 - Linux: `yarn dist:linux`
 
-In development the app uses BrowserRouter with `http://localhost:3001`, and in production it uses HashRouter to load `dist/renderer/index.html`.
+In development the app uses BrowserRouter with `<http://localhost:3001>`, and in production it uses HashRouter to load `dist/renderer/index.html`.
 
-#### Windows prerequisite: Developer Mode
+### Windows Prerequisite: Developer Mode
 
 When building or running unsigned local releases on Windows, enable Developer Mode:
 
 1. Open Settings → Privacy & security → For developers
 2. Turn on "Developer Mode"
-3. Reboot if Windows asks you to
-
-Note: The app is not code-signed on Windows. SmartScreen may show a warning; click "More info" → "Run anyway".
+3. Reboot
 
 ### Project Structure (excerpt)
 
@@ -82,25 +100,12 @@ src/
 
 ### Tech Stack
 
-- Electron
-- React (MUI v7)
-- TypeScript
-- Zustand
-- i18next
-- Vite
-
-### Execution Modes
-
-- Development: `yarn dev` (Vite: http://localhost:3001, BrowserRouter)
-- Production: `yarn build && yarn start` (HashRouter loading `dist/renderer/index.html`)
-
-### Disabling MCP Servers
-
-When you disable an MCP server, its configuration is removed from `claude_desktop_config.json` and moved to `claude_desktop_config_disabled.json` in the same directory. The configuration is moved as-is without modification.
-
-### Enabling MCP Servers
-
-When you enable a disabled MCP server, the configuration is moved back from `claude_desktop_config_disabled.json` to `claude_desktop_config.json`.
+- **Electron**
+- **React (MUI v7)**
+- **TypeScript**
+- **Zustand**
+- **i18next**
+- **Vite**
 
 ### Create Windows Icon
 
