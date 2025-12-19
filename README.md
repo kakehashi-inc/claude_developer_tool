@@ -33,7 +33,7 @@ When you enable a disabled MCP server, the configuration is moved back from `cla
 
 ### Development Rules
 
-- Developer documentation should be placed in the `Documents` directory, except for `README.md`.
+- Developer documentation (except `README.md`, `README-ja.md`) should be placed in the `Documents` directory.
 - Always run the linter after making changes and apply appropriate fixes. If intentionally allowing lint errors, document this in a comment. **Building is only for releases; linting is sufficient for debugging.**
 - When implementing models, place files on a per-table basis.
 - Create files in the `modules` directory for componentized implementations.
