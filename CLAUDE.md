@@ -55,7 +55,15 @@ Loop:
 
 <project_details>
 <instruction>
-CRITICAL: You MUST read the current content of [README-ja.md](README-ja.md) BEFORE taking any action.
-You MUST strictly adhere to the "Development Rules" (開発ルール) section within README-ja.md.
+CRITICAL: You MUST read the current content of [README.md](README.md) BEFORE taking any action.
+You MUST strictly adhere to the "Development Rules" (開発ルール) section within README.md.
 </instruction>
+<development_rules>
+- All developer-facing documents, except `README.md`, MUST be placed in the `Documents` directory.
+- After every change, you MUST run the linter and fix all issues. If a linter error is intentionally suppressed, add a comment explaining the reason. **A full build is only required for releases; running the linter alone is sufficient during development.**
+- Temporary or investigative scripts (e.g., research/debug scripts) MUST be placed in the `scripts` directory.
+- When implementing data models, create one file per table.
+- When creating or modifying a data model, update `Documents/テーブル定義.md`. Table definitions must be expressed as one table per database table, with column names, types, and relations documented within the table.
+- When system behavior changes, update `Documents/システム仕様.md`.
+</development_rules>
 </project_details>
