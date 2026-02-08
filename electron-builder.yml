@@ -17,11 +17,11 @@ releaseInfo:
   releaseNotes: |
     ## New Features
 
-    - nothing
+    -
 
     ## Bug Fixes
 
-    - nothing
+    -
 
 files:
   - dist/**/*
