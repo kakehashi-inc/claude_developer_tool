@@ -75,6 +75,16 @@ DevTools in development:
 
 In development the app uses BrowserRouter with `<http://localhost:3001>`, and in production it uses HashRouter to load `dist/renderer/index.html`.
 
+### macOS Prerequisite: Signing & Notarization Environment Variables
+
+To build a signed and notarized macOS distribution, set the following environment variables before running `yarn dist:mac`:
+
+```bash
+export APPLE_ID="your-apple-id@example.com"
+export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+export APPLE_TEAM_ID="XXXXXXXXXX"
+```
+
 ### Windows Prerequisite: Developer Mode
 
 When building or running unsigned local releases on Windows, enable Developer Mode:
