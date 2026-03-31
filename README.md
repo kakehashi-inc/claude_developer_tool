@@ -31,16 +31,6 @@ When you enable a disabled MCP server, the configuration is moved back from `cla
 
 ## Developer Reference
 
-### Development Rules
-
-- Developer documentation (except `README.md`, `README-ja.md`) should be placed in the `Documents` directory.
-- Always run the linter after making changes and apply appropriate fixes. If intentionally allowing lint errors, document this in a comment. **Building is only for releases; linting is sufficient for debugging.**
-- When implementing models, place files on a per-table basis.
-- Create files in the `modules` directory for componentized implementations.
-- Place temporary scripts (e.g., investigation scripts) in the `scripts` directory.
-- When creating or modifying models, update `Documents/Table Definitions.md`. Table definitions should be expressed as tables, with column names, types, and relations within the table.
-- When system behavior changes, update `Documents/System Specifications.md`.
-
 ### Requirements
 
 - Node.js 22.x+
