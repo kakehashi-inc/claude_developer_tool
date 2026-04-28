@@ -1,5 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ClaudeDesktopInfo, MCPServerInfo } from '../shared/types';
+import type { ClaudeDesktopInfo, MCPServerInfo, UpdateState } from '../shared/types';
+
+// preload はサンドボックス下で単一ファイル実行されるため、共有定数を import せずに文字列を直接記述する
+// (shared/constants.ts の UPDATER_CHANNELS と一致させること)
+const UPDATER_CHANNELS = {
+    CHECK: 'updater:check',
+    DOWNLOAD: 'updater:download',
+    QUIT_AND_INSTALL: 'updater:quit-and-install',
+    GET_STATE: 'updater:get-state',
+    STATE_CHANGED: 'updater:state-changed',
+} as const;
 
 // レンダラープロセスに公開するAPI
 const api = {
@@ -40,6 +50,25 @@ const api = {
         getLocale: (): Promise<string> => ipcRenderer.invoke('system:get-locale'),
 
         getVersion: (): Promise<string> => ipcRenderer.invoke('system:get-version'),
+    },
+    updater: {
+        getState: (): Promise<UpdateState> => ipcRenderer.invoke(UPDATER_CHANNELS.GET_STATE),
+
+        check: (): Promise<void> => ipcRenderer.invoke(UPDATER_CHANNELS.CHECK),
+
+        download: (): Promise<void> => ipcRenderer.invoke(UPDATER_CHANNELS.DOWNLOAD),
+
+        quitAndInstall: (): Promise<void> => ipcRenderer.invoke(UPDATER_CHANNELS.QUIT_AND_INSTALL),
+
+        onStateChanged: (callback: (state: UpdateState) => void): (() => void) => {
+            const listener = (_event: Electron.IpcRendererEvent, state: UpdateState): void => {
+                callback(state);
+            };
+            ipcRenderer.on(UPDATER_CHANNELS.STATE_CHANGED, listener);
+            return () => {
+                ipcRenderer.removeListener(UPDATER_CHANNELS.STATE_CHANGED, listener);
+            };
+        },
     },
 };
 

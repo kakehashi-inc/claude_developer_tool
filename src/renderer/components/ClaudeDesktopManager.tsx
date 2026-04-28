@@ -262,7 +262,7 @@ export const ClaudeDesktopManager: React.FC = () => {
                                             <DragIcon sx={{ color: 'action.disabled' }} />
                                         </TableCell>
                                         <TableCell>
-                                            <Typography variant='body2' fontWeight='medium'>
+                                            <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
                                                 {server.name}
                                             </Typography>
                                         </TableCell>
@@ -337,7 +337,7 @@ export const ClaudeDesktopManager: React.FC = () => {
                                             <DragIcon sx={{ color: 'action.disabled' }} />
                                         </TableCell>
                                         <TableCell>
-                                            <Typography variant='body2' fontWeight='medium'>
+                                            <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
                                                 {server.name}
                                             </Typography>
                                         </TableCell>

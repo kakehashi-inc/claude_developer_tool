@@ -177,10 +177,16 @@ export const TitleBar: React.FC = () => {
                     }}
                 >
                     <MenuItem onClick={() => handleLanguageSelect('ja')} selected={language === 'ja'}>
-                        <ListItemText primary={t('language.ja')} primaryTypographyProps={{ fontSize: '0.95rem' }} />
+                        <ListItemText
+                            primary={t('language.ja')}
+                            slotProps={{ primary: { sx: { fontSize: '0.95rem' } } }}
+                        />
                     </MenuItem>
                     <MenuItem onClick={() => handleLanguageSelect('en')} selected={language === 'en'}>
-                        <ListItemText primary={t('language.en')} primaryTypographyProps={{ fontSize: '0.95rem' }} />
+                        <ListItemText
+                            primary={t('language.en')}
+                            slotProps={{ primary: { sx: { fontSize: '0.95rem' } } }}
+                        />
                     </MenuItem>
                 </Menu>
 
@@ -214,7 +220,7 @@ export const TitleBar: React.FC = () => {
                         </ListItemIcon>
                         <ListItemText
                             primary={t('claudeDesktop.title')}
-                            primaryTypographyProps={{ fontSize: '0.95rem' }}
+                            slotProps={{ primary: { sx: { fontSize: '0.95rem' } } }}
                         />
                     </MenuItem>
                     <Divider />
@@ -222,7 +228,7 @@ export const TitleBar: React.FC = () => {
                         <ListItemIcon>
                             <ExitIcon />
                         </ListItemIcon>
-                        <ListItemText primary={t('menu.exit')} primaryTypographyProps={{ fontSize: '0.95rem' }} />
+                        <ListItemText primary={t('menu.exit')} slotProps={{ primary: { sx: { fontSize: '0.95rem' } } }} />
                     </MenuItem>
                 </Menu>
             </Box>

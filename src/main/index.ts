@@ -1,12 +1,15 @@
 import { app, BrowserWindow } from 'electron';
 import { join } from 'path';
 import { ClaudeDesktopManager } from './services/ClaudeDesktopManager';
+import { UpdaterService } from './services/UpdaterService';
 import { registerClaudeDesktopHandlers } from './ipc/claudeDesktopHandlers';
 import { registerWindowHandlers } from './ipc/windowHandlers';
 import { registerSystemHandlers } from './ipc/systemHandlers';
+import { registerUpdaterHandlers } from './ipc/updaterHandlers';
 
 let mainWindow: BrowserWindow | null = null;
 let claudeDesktopManager: ClaudeDesktopManager;
+let updaterService: UpdaterService;
 
 const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
 const gotTheLock = app.requestSingleInstanceLock();
@@ -73,12 +76,21 @@ if (!gotTheLock) {
         // Claude Desktop Managerを初期化
         claudeDesktopManager = new ClaudeDesktopManager();
 
+        // 自動アップデートサービスを初期化
+        updaterService = new UpdaterService();
+        updaterService.initialize();
+
         // IPCハンドラーを登録
         registerClaudeDesktopHandlers(claudeDesktopManager);
         registerWindowHandlers();
         registerSystemHandlers();
+        registerUpdaterHandlers(updaterService);
 
         createWindow();
+
+        if (mainWindow) {
+            updaterService.scheduleStartupCheck(mainWindow);
+        }
 
         app.on('activate', () => {
             if (BrowserWindow.getAllWindows().length === 0) {

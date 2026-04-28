@@ -25,3 +25,12 @@ export interface ClaudeDesktopInfo {
 }
 
 export type OSType = 'win32' | 'darwin' | 'linux';
+
+export type UpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
+
+export interface UpdateState {
+    status: UpdateStatus;
+    version?: string;
+    progress?: number;
+    error?: string;
+}

@@ -23,6 +23,15 @@ export const CLAUDE_CONFIG_PATHS: Record<OSType, string> = {
 export const CLAUDE_CONFIG_FILENAME = 'claude_desktop_config.json';
 export const CLAUDE_CONFIG_DISABLED_FILENAME = 'claude_desktop_config_disabled.json';
 
+// 自動アップデート用 IPC チャンネル
+export const UPDATER_CHANNELS = {
+    CHECK: 'updater:check',
+    DOWNLOAD: 'updater:download',
+    QUIT_AND_INSTALL: 'updater:quit-and-install',
+    GET_STATE: 'updater:get-state',
+    STATE_CHANGED: 'updater:state-changed',
+} as const;
+
 // Claude Desktop実行ファイルパス
 export const getClaudeExecutablePaths = (): string[] => {
     if (process.platform === 'win32') {

@@ -10,8 +10,8 @@ portable:
 publish:
   provider: github
   owner: kakehashi-inc
-  repo: https://github.com/kakehashi-inc/claude_developer_tool.git
-  releaseType: release
+  repo: claude_developer_tool
+  releaseType: draft
 releaseInfo:
   releaseName: "v${version}"
   releaseNotes: |

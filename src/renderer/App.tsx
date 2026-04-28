@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppStore } from './store/useAppStore';
 import { Layout } from './components/Layout';
 import { ClaudeDesktopManager } from './components/ClaudeDesktopManager';
+import { UpdateNotification } from './components/UpdateNotification';
 
 const isDev = import.meta.env.DEV;
 const Router = isDev ? BrowserRouter : HashRouter;
@@ -53,6 +54,7 @@ export const App: React.FC = () => {
                         <Route path='/' element={<ClaudeDesktopManager />} />
                     </Routes>
                 </Layout>
+                <UpdateNotification />
             </Router>
         </ThemeProvider>
     );
