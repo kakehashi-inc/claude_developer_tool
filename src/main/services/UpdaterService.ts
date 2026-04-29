@@ -4,6 +4,10 @@ import type { UpdateState } from '../../shared/types';
 import { UPDATER_CHANNELS } from '../../shared/constants';
 
 const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
+// Portable builds must not auto-update: electron-updater would download the NSIS
+// installer per latest.yml and install the app to a location the user never chose.
+const isPortable = !!process.env.PORTABLE_EXECUTABLE_FILE;
+const isUpdaterDisabled = isDev || isPortable;
 const AUTO_INSTALL_DELAY_MS = 1500;
 
 export class UpdaterService {
@@ -13,7 +17,7 @@ export class UpdaterService {
     private initialized = false;
 
     initialize(): void {
-        if (isDev) {
+        if (isUpdaterDisabled) {
             return;
         }
         if (this.initialized) {
@@ -66,7 +70,7 @@ export class UpdaterService {
     }
 
     async checkForUpdates(): Promise<void> {
-        if (isDev) {
+        if (isUpdaterDisabled) {
             return;
         }
         try {
@@ -77,7 +81,7 @@ export class UpdaterService {
     }
 
     async downloadUpdate(): Promise<void> {
-        if (isDev) {
+        if (isUpdaterDisabled) {
             return;
         }
         this.autoInstallOnDownloaded = true;
@@ -90,7 +94,7 @@ export class UpdaterService {
     }
 
     quitAndInstall(): void {
-        if (isDev) {
+        if (isUpdaterDisabled) {
             return;
         }
         setImmediate(() => {
@@ -105,7 +109,7 @@ export class UpdaterService {
     }
 
     scheduleStartupCheck(window: BrowserWindow, delayMs = 3000): void {
-        if (isDev) {
+        if (isUpdaterDisabled) {
             return;
         }
         if (this.startupCheckScheduled) {
