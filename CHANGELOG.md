@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.2.0] - 2026-05-21
+
 ### Added
 
 - Auto update support via `electron-updater` with a Snackbar UI prompting users to apply new versions (i18n: ja/en).
