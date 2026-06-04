@@ -29,7 +29,11 @@ export const UpdateNotification: React.FC = () => {
     }, []);
 
     const isVisible =
-        !dismissed && (state.status === 'available' || state.status === 'downloading' || state.status === 'downloaded');
+        !dismissed &&
+        (state.status === 'available' ||
+            state.status === 'downloading' ||
+            state.status === 'downloaded' ||
+            state.status === 'error');
 
     if (!isVisible) {
         return null;
@@ -56,6 +60,24 @@ export const UpdateNotification: React.FC = () => {
                         </Button>
                         <Button size='small' onClick={handleUpdate} variant='contained'>
                             {t('updater.update')}
+                        </Button>
+                    </Stack>
+                </Stack>
+            );
+        }
+
+        if (state.status === 'error') {
+            return (
+                <Stack spacing={1.5} sx={{ minWidth: 280 }}>
+                    <Typography variant='body2' color='error'>
+                        {t('updater.error', { error: state.error ?? '' })}
+                    </Typography>
+                    <Stack direction='row' spacing={1} sx={{ justifyContent: 'flex-end' }}>
+                        <Button size='small' onClick={handleLater} color='inherit'>
+                            {t('updater.dismiss')}
+                        </Button>
+                        <Button size='small' onClick={handleUpdate} variant='contained'>
+                            {t('updater.retry')}
                         </Button>
                     </Stack>
                 </Stack>

@@ -61,7 +61,11 @@ export class UpdaterService {
         autoUpdater.on('error', (error: Error) => {
             console.error('[updater] error:', error);
             this.autoInstallOnDownloaded = false;
-            this.updateAndBroadcast({ status: 'idle' });
+            this.updateAndBroadcast({
+                status: 'error',
+                version: this.state.version,
+                error: error.message,
+            });
         });
     }
 
@@ -90,6 +94,11 @@ export class UpdaterService {
         } catch (error) {
             this.autoInstallOnDownloaded = false;
             console.error('[updater] downloadUpdate failed:', error);
+            this.updateAndBroadcast({
+                status: 'error',
+                version: this.state.version,
+                error: error instanceof Error ? error.message : String(error),
+            });
         }
     }
 
