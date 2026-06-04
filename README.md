@@ -15,9 +15,10 @@ English | [日本語](README-ja.md)
   - Enable/disable/reorder Claude Code (CLI) MCP servers
   - When you use WSL, also manage Claude Code inside WSL in a separate section
 - **Claude Code Cleanup**:
-  - List unneeded history, cache, and temporary data with their sizes and delete the selected ones
+  - List unneeded history, cache, and temporary data with their file counts and sizes and delete the selected ones
   - Besides reclaiming disk space, this can improve performance and clear stale memory that causes unexpected behavior
   - Per-project history can be cleaned individually or all at once
+  - An "Other tools" section can also tidy up tools used alongside Claude Code (e.g. Serena), shown only when they are present
 - **i18n/theme**: Japanese/English, light/dark modes
 
 ## Supported OS

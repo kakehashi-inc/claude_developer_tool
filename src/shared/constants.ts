@@ -1,6 +1,6 @@
 import { homedir } from 'os';
 import { join } from 'path';
-import { OSType } from './types';
+import { OSType, OtherCleanupItem } from './types';
 
 // Claude Desktopの設定ファイルパス
 const getClaudeConfigPath = (platform: OSType): string => {
@@ -45,6 +45,9 @@ export const CLAUDE_CLEANUP_CHANNELS = {
     GET_ENVIRONMENTS: 'claude-cleanup:get-environments',
     SCAN: 'claude-cleanup:scan',
     DELETE: 'claude-cleanup:delete',
+    GET_OTHER_ENVIRONMENTS: 'claude-cleanup:get-other-environments',
+    SCAN_OTHER: 'claude-cleanup:scan-other',
+    DELETE_OTHER: 'claude-cleanup:delete-other',
 } as const;
 
 // クリーンアップ候補ディレクトリ（~/.claude 配下、表示順・projects 先頭）。
@@ -72,6 +75,34 @@ export const CLEANUP_CANDIDATES: CleanupCandidateSpec[] = [
 
 // projects ディレクトリのキー（特別扱い用）
 export const CLEANUP_PROJECTS_KEY = 'projects';
+
+// Serena のデータディレクトリ（ホーム直下）
+export const SERENA_DIR = '.serena';
+
+// 「その他のツール」クリーンアップ項目の registry。
+// 新しい外部ツール項目はここに 1 つ定義を追加するだけで UI まで反映される。
+// targetPath / requiresPath はすべて HOME 相対。
+export const OTHER_CLEANUP_ITEMS: OtherCleanupItem[] = [
+    {
+        key: 'serena-projects',
+        action: 'yaml-list-clear',
+        targetPath: '.serena/serena_config.yml',
+        yamlKey: 'projects',
+        metricKind: 'count',
+        requiresPath: '.serena/serena_config.yml',
+        defaultChecked: false,
+        group: 'serena',
+    },
+    {
+        key: 'serena-logs',
+        action: 'dir-delete',
+        targetPath: '.serena/logs',
+        metricKind: 'size',
+        requiresPath: '.serena/logs',
+        defaultChecked: false,
+        group: 'serena',
+    },
+];
 
 // 自動アップデート用 IPC チャンネル
 export const UPDATER_CHANNELS = {

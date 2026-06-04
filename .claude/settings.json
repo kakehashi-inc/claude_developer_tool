@@ -8,8 +8,10 @@
       "Bash(grep:*)",
       "Bash(glob:*)",
       "Bash(ls:*)",
-      "Bash(yarn lint)",
-      "Bash(yarn format:*)"
+      "Bash(yarn lint:*)",
+      "Bash(yarn format:*)",
+      "PowerShell(yarn lint:*)",
+      "PowerShell(yarn format:*)"
     ],
     "deny": [],
     "ask": []

@@ -6,6 +6,8 @@ import type {
     CleanupEnvReport,
     CleanupSelection,
     MCPServerInfo,
+    OtherCleanupReport,
+    OtherCleanupSelection,
     UpdateState,
 } from '../shared/types';
 
@@ -34,6 +36,9 @@ const CLAUDE_CLEANUP_CHANNELS = {
     GET_ENVIRONMENTS: 'claude-cleanup:get-environments',
     SCAN: 'claude-cleanup:scan',
     DELETE: 'claude-cleanup:delete',
+    GET_OTHER_ENVIRONMENTS: 'claude-cleanup:get-other-environments',
+    SCAN_OTHER: 'claude-cleanup:scan-other',
+    DELETE_OTHER: 'claude-cleanup:delete-other',
 } as const;
 
 type MCPServers = { enabled: MCPServerInfo[]; disabled: MCPServerInfo[] };
@@ -89,6 +94,15 @@ const api = {
 
         delete: (env: ClaudeEnvironment, selection: CleanupSelection): Promise<CleanupEnvReport> =>
             ipcRenderer.invoke(CLAUDE_CLEANUP_CHANNELS.DELETE, env, selection),
+
+        getOtherEnvironments: (): Promise<{ env: ClaudeEnvironment; label: string }[]> =>
+            ipcRenderer.invoke(CLAUDE_CLEANUP_CHANNELS.GET_OTHER_ENVIRONMENTS),
+
+        scanOther: (env: ClaudeEnvironment): Promise<OtherCleanupReport> =>
+            ipcRenderer.invoke(CLAUDE_CLEANUP_CHANNELS.SCAN_OTHER, env),
+
+        deleteOther: (env: ClaudeEnvironment, selection: OtherCleanupSelection): Promise<OtherCleanupReport> =>
+            ipcRenderer.invoke(CLAUDE_CLEANUP_CHANNELS.DELETE_OTHER, env, selection),
     },
     window: {
         minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize'),

@@ -15,6 +15,16 @@ export function formatBytes(bytes: number): string {
 }
 
 /**
+ * ファイル数を桁区切りで整形する。
+ */
+export function formatCount(n: number): string {
+    if (!Number.isFinite(n) || n <= 0) {
+        return '0';
+    }
+    return Math.round(n).toLocaleString();
+}
+
+/**
  * ClaudeEnvironment を React の key / 状態マップ用の安定キーに変換する。
  */
 export function envId(env: ClaudeEnvironment): string {

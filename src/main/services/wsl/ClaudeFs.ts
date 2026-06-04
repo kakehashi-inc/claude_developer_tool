@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync, rmSyn
 import { homedir } from 'os';
 import { join, dirname } from 'path';
 import { ClaudeEnvironment } from '../../../shared/types';
-import { recursiveDirSize } from '../../utils/fsSize';
+import { recursiveDirStats, type DirStats } from '../../utils/fsSize';
 import { WslDetector } from './WslDetector';
 
 /**
@@ -167,6 +167,47 @@ export class ClaudeFs {
         );
     }
 
+    /** 生のテキストファイルを読み込む（JSON.parse せず、trim もしない）。存在しなければ null。 */
+    async readText(relPath: string): Promise<string | null> {
+        const abs = await this.resolveAbs(relPath);
+        try {
+            if (abs !== null) {
+                if (!existsSync(abs)) {
+                    return null;
+                }
+                return readFileSync(abs, 'utf-8');
+            }
+            // コマンドモード
+            const lp = await this.linuxPath(relPath);
+            const exists = await this.exists(relPath);
+            if (!exists) {
+                return null;
+            }
+            const buf = await this.detector.runInDistro(this.distro, `cat ${this.shellQuote(lp)}`);
+            return buf.toString('utf8');
+        } catch (error) {
+            console.error(`Failed to read text from ${relPath} (${JSON.stringify(this.env)}):`, error);
+            return null;
+        }
+    }
+
+    /** 生のテキストを書き込む（content をそのまま、バイト忠実に。改行コードを保持）。 */
+    async writeText(relPath: string, content: string): Promise<void> {
+        const abs = await this.resolveAbs(relPath);
+        if (abs !== null) {
+            mkdirSync(dirname(abs), { recursive: true });
+            writeFileSync(abs, content, 'utf-8');
+            return;
+        }
+        // コマンドモード: base64 で投入してエスケープ問題・改行変換を回避
+        const lp = await this.linuxPath(relPath);
+        const b64 = Buffer.from(content, 'utf8').toString('base64');
+        await this.detector.runInDistro(
+            this.distro,
+            `mkdir -p ${this.shellQuote(this.dirnamePosix(lp))} && printf %s ${this.shellQuote(b64)} | base64 -d > ${this.shellQuote(lp)}`
+        );
+    }
+
     async deleteFile(relPath: string): Promise<void> {
         const abs = await this.resolveAbs(relPath);
         if (abs !== null) {
@@ -211,24 +252,34 @@ export class ClaudeFs {
         }
     }
 
-    /** ディレクトリの再帰サイズ（バイト）。存在しなければ 0。 */
-    async dirSize(relPath: string): Promise<number> {
+    /** ディレクトリの再帰サイズ（バイト）とファイル数。存在しなければ {0,0}。 */
+    async dirStats(relPath: string): Promise<DirStats> {
         const abs = await this.resolveAbs(relPath);
         if (abs !== null) {
-            return recursiveDirSize(abs);
+            return recursiveDirStats(abs);
         }
-        // コマンドモード: du -sb で高速にバイト数取得
+        // コマンドモード: du -sb（バイト）と find ... -type f | wc -l（ファイル数）
         try {
             const lp = await this.linuxPath(relPath);
             const buf = await this.detector.runInDistro(
                 this.distro,
-                `du -sb ${this.shellQuote(lp)} 2>/dev/null | cut -f1 || echo 0`
+                `du -sb ${this.shellQuote(lp)} 2>/dev/null | cut -f1 || echo 0; find ${this.shellQuote(lp)} -type f 2>/dev/null | wc -l || echo 0`
             );
-            const n = parseInt(buf.toString('utf8').trim(), 10);
-            return Number.isFinite(n) ? n : 0;
+            const [sizeLine, countLine] = buf.toString('utf8').split(/\r?\n/);
+            const size = parseInt((sizeLine ?? '0').trim(), 10);
+            const fileCount = parseInt((countLine ?? '0').trim(), 10);
+            return {
+                size: Number.isFinite(size) ? size : 0,
+                fileCount: Number.isFinite(fileCount) ? fileCount : 0,
+            };
         } catch {
-            return 0;
+            return { size: 0, fileCount: 0 };
         }
+    }
+
+    /** ディレクトリの再帰サイズ（バイト）。存在しなければ 0。dirStats の薄いラッパー。 */
+    async dirSize(relPath: string): Promise<number> {
+        return (await this.dirStats(relPath)).size;
     }
 
     /** ディレクトリを丸ごと削除する（再帰）。 */
@@ -240,6 +291,67 @@ export class ClaudeFs {
         }
         const lp = await this.linuxPath(relPath);
         await this.detector.runInDistro(this.distro, `rm -rf ${this.shellQuote(lp)}`);
+    }
+
+    /**
+     * ディレクトリをベストエフォートで削除する。
+     * 使用中（ロック）などで一部が消せなくても、削除できたものは削除し、全削除できたかを返す。
+     * 稼働中のツール（例: Serena）がログを掴んでいるケースで「消せた分は消す」を実現する。
+     */
+    async removeDirBestEffort(relPath: string): Promise<{ removedAll: boolean }> {
+        const abs = await this.resolveAbs(relPath);
+        if (abs === null) {
+            // WSL コマンドモード: rm -rf はロックに比較的寛容。成否は存在確認で判定。
+            const lp = await this.linuxPath(relPath);
+            await this.detector.runInDistro(this.distro, `rm -rf ${this.shellQuote(lp)} 2>/dev/null || true`);
+            const stillExists = await this.exists(relPath);
+            return { removedAll: !stillExists };
+        }
+
+        // まず通常の一括削除を試す
+        try {
+            rmSync(abs, { recursive: true, force: true });
+            return { removedAll: true };
+        } catch {
+            // 一部がロックされている → エントリ単位で可能な範囲を削除する
+        }
+        const removedAll = this.removeEntriesBestEffort(abs);
+        return { removedAll };
+    }
+
+    /** abs 配下を可能な限り削除し、自身も削除できたかを返す（同期・ベストエフォート）。 */
+    private removeEntriesBestEffort(abs: string): boolean {
+        let allRemoved = true;
+        let entries;
+        try {
+            entries = readdirSync(abs, { withFileTypes: true });
+        } catch {
+            return false;
+        }
+        for (const entry of entries) {
+            // native の絶対パスに対する結合のため、プラットフォーム適切な区切りで join する
+            // （Windows=\、macOS/Linux=/）。
+            const child = join(abs, entry.name);
+            try {
+                if (entry.isDirectory() && !entry.isSymbolicLink()) {
+                    if (!this.removeEntriesBestEffort(child)) {
+                        allRemoved = false;
+                    }
+                } else {
+                    rmSync(child, { force: true });
+                }
+            } catch {
+                allRemoved = false;
+            }
+        }
+        if (allRemoved) {
+            try {
+                rmSync(abs, { recursive: true, force: true });
+            } catch {
+                allRemoved = false;
+            }
+        }
+        return allRemoved;
     }
 
     // ---- ヘルパー ----

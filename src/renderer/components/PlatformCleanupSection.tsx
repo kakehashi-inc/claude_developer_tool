@@ -26,53 +26,71 @@ import {
     KeyboardArrowRight as CollapseIcon,
     DeleteSweep as DeleteIcon,
 } from '@mui/icons-material';
-import type { ClaudeEnvironment, CleanupCandidate, CleanupEnvReport } from '../../shared/types';
-import { formatBytes } from '../utils/format';
+import type {
+    ClaudeEnvironment,
+    CleanupCandidate,
+    CleanupEnvReport,
+    OtherCleanupReport,
+} from '../../shared/types';
+import { formatBytes, formatCount } from '../utils/format';
 
 interface Props {
     env: ClaudeEnvironment;
     label: string;
-    onNotify: (message: string, severity: 'success' | 'error') => void;
+    onNotify: (message: string, severity: 'success' | 'error' | 'warning') => void;
 }
 
 const PROJECTS_KEY = 'projects';
 
-// i18n キーは camelCase。ディレクトリ名（ハイフン区切り）を変換する。
-function dirI18nKey(key: string): string {
+// i18n キーは camelCase。ハイフン区切りキーを変換する。
+function camelKey(key: string): string {
     return key.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
 }
 
 /**
- * 1 つの環境（native または WSL distro）のクリーンアップセクション。
+ * 1 つのプラットフォーム（Windows / macOS / Linux / WSL distro）のクリーンアップセクション。
+ * Claude Code のディレクトリリストと、その他のツール（Serena 等）のリストを 1 つにまとめ、
+ * 末尾の「選択済みを削除」ボタン 1 つで両方をまとめて処理する。
  */
-export const CleanupEnvSection: React.FC<Props> = ({ env, label, onNotify }) => {
+export const PlatformCleanupSection: React.FC<Props> = ({ env, label, onNotify }) => {
     const { t } = useTranslation();
     const [report, setReport] = useState<CleanupEnvReport | null>(null);
+    const [otherReport, setOtherReport] = useState<OtherCleanupReport | null>(null);
     const [loading, setLoading] = useState(true);
+
+    // Claude Code 側の選択
     const [checkedDirs, setCheckedDirs] = useState<Set<string>>(new Set());
     const [checkedProjects, setCheckedProjects] = useState<Set<string>>(new Set());
+    // その他ツール側の選択（項目キー）
+    const [checkedOther, setCheckedOther] = useState<Set<string>>(new Set());
+
     const [expanded, setExpanded] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
-    const applyReport = (r: CleanupEnvReport) => {
+    const applyReports = (r: CleanupEnvReport | null, o: OtherCleanupReport | null) => {
         setReport(r);
+        setOtherReport(o);
         const defaults = new Set<string>();
-        for (const c of r.candidates) {
+        for (const c of r?.candidates ?? []) {
             if (c.exists && c.defaultChecked) {
                 defaults.add(c.key);
             }
         }
         setCheckedDirs(defaults);
         setCheckedProjects(new Set());
+        setCheckedOther(new Set());
     };
 
     const load = async () => {
         try {
-            const r = await window.api.claudeCleanup.scan(env);
-            applyReport(r);
+            const [r, o] = await Promise.all([
+                window.api.claudeCleanup.scan(env).catch(() => null),
+                window.api.claudeCleanup.scanOther(env).catch(() => null),
+            ]);
+            applyReports(r, o);
         } catch (error) {
-            console.error('Failed to scan cleanup candidates:', error);
+            console.error('Failed to scan cleanup targets:', error);
         } finally {
             setLoading(false);
         }
@@ -83,9 +101,10 @@ export const CleanupEnvSection: React.FC<Props> = ({ env, label, onNotify }) => 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [label]);
 
-    const candidates = report?.candidates ?? [];
+    const candidates = (report?.candidates ?? []).filter(c => c.exists);
     const projectsCandidate = candidates.find(c => c.key === PROJECTS_KEY);
     const projectChildren = projectsCandidate?.children ?? [];
+    const otherItems = otherReport?.items ?? [];
 
     const toggleDir = (key: string) => {
         setCheckedDirs(prev => {
@@ -97,7 +116,6 @@ export const CleanupEnvSection: React.FC<Props> = ({ env, label, onNotify }) => 
             }
             return next;
         });
-        // projects 全体を ON にしたら個別選択はクリア
         if (key === PROJECTS_KEY) {
             setCheckedProjects(new Set());
         }
@@ -115,60 +133,94 @@ export const CleanupEnvSection: React.FC<Props> = ({ env, label, onNotify }) => 
         });
     };
 
-    // projects 親チェックの状態（all / some / none）
+    const toggleOther = (key: string) => {
+        setCheckedOther(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) {
+                next.delete(key);
+            } else {
+                next.add(key);
+            }
+            return next;
+        });
+    };
+
     const projectsAllChecked = checkedDirs.has(PROJECTS_KEY);
     const projectsIndeterminate = !projectsAllChecked && checkedProjects.size > 0;
 
-    const selection = useMemo(() => {
+    const claudeSelection = useMemo(() => {
         const dirs = Array.from(checkedDirs);
         const projectDirs = checkedDirs.has(PROJECTS_KEY) ? [] : Array.from(checkedProjects);
         return { dirs, projectDirs };
     }, [checkedDirs, checkedProjects]);
 
-    // 回収予定容量と件数
-    const { reclaimSize, reclaimCount } = useMemo(() => {
-        let size = 0;
+    // 選択件数（Claude Code ＋ その他ツール）
+    const selectedCount = useMemo(() => {
         let count = 0;
         for (const c of candidates) {
             if (c.key === PROJECTS_KEY) {
                 if (checkedDirs.has(PROJECTS_KEY)) {
-                    size += c.size;
                     count += 1;
                 } else {
                     for (const child of c.children ?? []) {
                         if (checkedProjects.has(child.name)) {
-                            size += child.size;
                             count += 1;
                         }
                     }
                 }
             } else if (checkedDirs.has(c.key)) {
-                size += c.size;
                 count += 1;
             }
         }
-        return { reclaimSize: size, reclaimCount: count };
-    }, [candidates, checkedDirs, checkedProjects]);
+        count += checkedOther.size;
+        return count;
+    }, [candidates, checkedDirs, checkedProjects, checkedOther]);
 
-    const canDelete = reclaimCount > 0;
+    const canDelete = selectedCount > 0;
 
     const handleDelete = async () => {
         setConfirmOpen(false);
         setDeleting(true);
+        let hadError = false;
+        let skippedCount = 0;
+        let r: CleanupEnvReport | null = report;
+        let o: OtherCleanupReport | null = otherReport;
         try {
-            const r = await window.api.claudeCleanup.delete(env, selection);
-            applyReport(r);
-            onNotify(t('cleanup.deleteSuccess'), 'success');
+            if (claudeSelection.dirs.length > 0 || claudeSelection.projectDirs.length > 0) {
+                r = await window.api.claudeCleanup.delete(env, claudeSelection);
+                skippedCount += r.skipped?.length ?? 0;
+            }
         } catch (error) {
-            // 部分失敗でも再スキャンしたいので、エラーメッセージを表示しつつ再読込
-            onNotify(error instanceof Error ? error.message : t('cleanup.deleteError'), 'error');
-            await load();
-        } finally {
-            setDeleting(false);
+            hadError = true;
+            console.error('Claude cleanup failed:', error);
         }
+        try {
+            if (checkedOther.size > 0) {
+                o = await window.api.claudeCleanup.deleteOther(env, Array.from(checkedOther));
+                skippedCount += o.skipped?.length ?? 0;
+            }
+        } catch (error) {
+            hadError = true;
+            console.error('Other cleanup failed:', error);
+        }
+
+        if (hadError) {
+            // 想定外の IPC エラー等。消せた分を反映しつつエラー通知。
+            onNotify(t('cleanup.deleteError'), 'error');
+            await load();
+        } else {
+            applyReports(r, o);
+            if (skippedCount > 0) {
+                // ロック等で一部スキップ: 消せた分は反映し、スキップを警告で通知。
+                onNotify(t('cleanup.deletePartial'), 'warning');
+            } else {
+                onNotify(t('cleanup.deleteSuccess'), 'success');
+            }
+        }
+        setDeleting(false);
     };
 
-    const visibleCandidates = candidates.filter(c => c.exists);
+    const hasAnyTarget = candidates.length > 0 || otherItems.length > 0;
 
     const renderProjectsRow = (c: CleanupCandidate) => (
         <React.Fragment key={c.key}>
@@ -186,13 +238,18 @@ export const CleanupEnvSection: React.FC<Props> = ({ env, label, onNotify }) => 
                             {expanded ? <ExpandIcon /> : <CollapseIcon />}
                         </IconButton>
                         <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
-                            {t(`cleanup.dir.${dirI18nKey(c.key)}`)}
+                            {t(`cleanup.dir.${camelKey(c.key)}`)}
                         </Typography>
                     </Box>
                 </TableCell>
                 <TableCell>
                     <Typography variant='body2' color='text.secondary'>
-                        {t(`cleanup.desc.${dirI18nKey(c.key)}`)}
+                        {t(`cleanup.desc.${camelKey(c.key)}`)}
+                    </Typography>
+                </TableCell>
+                <TableCell align='right'>
+                    <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
+                        {formatCount(c.fileCount)}
                     </Typography>
                 </TableCell>
                 <TableCell align='right'>
@@ -202,7 +259,7 @@ export const CleanupEnvSection: React.FC<Props> = ({ env, label, onNotify }) => 
                 </TableCell>
             </TableRow>
             <TableRow>
-                <TableCell sx={{ py: 0, border: 0 }} colSpan={4}>
+                <TableCell sx={{ py: 0, border: 0 }} colSpan={5}>
                     <Collapse in={expanded} timeout='auto' unmountOnExit>
                         <Box sx={{ pl: 6, py: 1 }}>
                             {projectChildren.length === 0 ? (
@@ -232,6 +289,11 @@ export const CleanupEnvSection: React.FC<Props> = ({ env, label, onNotify }) => 
                                                 </TableCell>
                                                 <TableCell align='right' sx={{ border: 0 }}>
                                                     <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
+                                                        {formatCount(child.fileCount)}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell align='right' sx={{ border: 0 }}>
+                                                    <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
                                                         {formatBytes(child.size)}
                                                     </Typography>
                                                 </TableCell>
@@ -254,12 +316,17 @@ export const CleanupEnvSection: React.FC<Props> = ({ env, label, onNotify }) => 
             </TableCell>
             <TableCell>
                 <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
-                    {t(`cleanup.dir.${dirI18nKey(c.key)}`)}
+                    {t(`cleanup.dir.${camelKey(c.key)}`)}
                 </Typography>
             </TableCell>
             <TableCell>
                 <Typography variant='body2' color='text.secondary'>
-                    {t(`cleanup.desc.${dirI18nKey(c.key)}`)}
+                    {t(`cleanup.desc.${camelKey(c.key)}`)}
+                </Typography>
+            </TableCell>
+            <TableCell align='right'>
+                <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
+                    {formatCount(c.fileCount)}
                 </Typography>
             </TableCell>
             <TableCell align='right'>
@@ -270,14 +337,54 @@ export const CleanupEnvSection: React.FC<Props> = ({ env, label, onNotify }) => 
         </TableRow>
     );
 
+    if (loading) {
+        return (
+            <Box sx={{ mb: 4 }}>
+                <Typography sx={{ px: 1 }}>{t('common.loading')}</Typography>
+            </Box>
+        );
+    }
+
+    if (!hasAnyTarget) {
+        return (
+            <Box sx={{ mb: 4 }}>
+                <Alert severity='info'>{t('cleanup.noCandidates')}</Alert>
+            </Box>
+        );
+    }
+
     return (
         <Box sx={{ mb: 4 }}>
-            {loading ? (
-                <Typography sx={{ px: 1 }}>{t('common.loading')}</Typography>
-            ) : visibleCandidates.length === 0 ? (
-                <Alert severity='info'>{t('cleanup.noCandidates')}</Alert>
-            ) : (
-                <>
+            {/* Claude Code のディレクトリリスト（見出しなし） */}
+            {candidates.length > 0 && (
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell padding='checkbox'></TableCell>
+                                <TableCell>{t('cleanup.columnName')}</TableCell>
+                                <TableCell>{t('cleanup.columnDescription')}</TableCell>
+                                <TableCell align='right' width='110'>
+                                    {t('cleanup.columnFiles')}
+                                </TableCell>
+                                <TableCell align='right' width='120'>
+                                    {t('cleanup.columnSize')}
+                                </TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {candidates.map(c => (c.key === PROJECTS_KEY ? renderProjectsRow(c) : renderDirRow(c)))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
+
+            {/* その他のツールのリスト（こちらだけ見出しを付ける） */}
+            {otherItems.length > 0 && (
+                <Box sx={{ mt: candidates.length > 0 ? 3 : 0 }}>
+                    <Typography variant='subtitle1' sx={{ mb: 1 }}>
+                        {t('cleanup.other.sectionTitle')}
+                    </Typography>
                     <TableContainer component={Paper}>
                         <Table>
                             <TableHead>
@@ -285,45 +392,71 @@ export const CleanupEnvSection: React.FC<Props> = ({ env, label, onNotify }) => 
                                     <TableCell padding='checkbox'></TableCell>
                                     <TableCell>{t('cleanup.columnName')}</TableCell>
                                     <TableCell>{t('cleanup.columnDescription')}</TableCell>
-                                    <TableCell align='right' width='120'>
-                                        {t('cleanup.columnSize')}
+                                    <TableCell align='right' width='110'>
+                                        {t('cleanup.columnFiles')}
+                                    </TableCell>
+                                    <TableCell align='right' width='150'>
+                                        {t('cleanup.other.columnMetric')}
                                     </TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {visibleCandidates.map(c =>
-                                    c.key === PROJECTS_KEY ? renderProjectsRow(c) : renderDirRow(c)
-                                )}
+                                {otherItems.map(item => (
+                                    <TableRow key={item.key} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                                        <TableCell padding='checkbox'>
+                                            <Checkbox
+                                                checked={checkedOther.has(item.key)}
+                                                onChange={() => toggleOther(item.key)}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
+                                                {t(`cleanup.other.label.${camelKey(item.key)}`)}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Typography variant='body2' color='text.secondary'>
+                                                {t(`cleanup.other.desc.${camelKey(item.key)}`)}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell align='right'>
+                                            <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
+                                                {item.metricKind === 'size' ? formatCount(item.fileCount ?? 0) : '-'}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell align='right'>
+                                            <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
+                                                {item.metricKind === 'size'
+                                                    ? formatBytes(item.metricValue)
+                                                    : t('cleanup.other.registered', { count: item.metricValue })}
+                                            </Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
                             </TableBody>
                         </Table>
                     </TableContainer>
-
-                    <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Button
-                            variant='contained'
-                            color='error'
-                            startIcon={<DeleteIcon />}
-                            disabled={!canDelete || deleting}
-                            onClick={() => setConfirmOpen(true)}
-                            sx={{ textTransform: 'none' }}
-                        >
-                            {t('cleanup.deleteSelected')}
-                        </Button>
-                        {canDelete && (
-                            <Typography variant='body2' color='text.secondary'>
-                                {t('cleanup.reclaimable', { count: reclaimCount, size: formatBytes(reclaimSize) })}
-                            </Typography>
-                        )}
-                    </Box>
-                </>
+                </Box>
             )}
+
+            {/* プラットフォーム単位で 1 つの削除ボタン */}
+            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Button
+                    variant='contained'
+                    color='error'
+                    startIcon={<DeleteIcon />}
+                    disabled={!canDelete || deleting}
+                    onClick={() => setConfirmOpen(true)}
+                    sx={{ textTransform: 'none' }}
+                >
+                    {t('cleanup.deleteSelected')}
+                </Button>
+            </Box>
 
             <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
                 <DialogTitle>{t('cleanup.confirmTitle')}</DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
-                        {t('cleanup.confirmBody', { count: reclaimCount, size: formatBytes(reclaimSize) })}
-                    </DialogContentText>
+                    <DialogContentText>{t('cleanup.confirmBody', { count: selectedCount })}</DialogContentText>
                     <Alert severity='warning' sx={{ mt: 2 }}>
                         {t('cleanup.inUseWarning')}
                     </Alert>

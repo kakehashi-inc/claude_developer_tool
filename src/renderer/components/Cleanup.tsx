@@ -3,17 +3,22 @@ import { useTranslation } from 'react-i18next';
 import { Box, Typography, Snackbar, Alert, Divider } from '@mui/material';
 import type { ClaudeEnvironment } from '../../shared/types';
 import { envId } from '../utils/format';
-import { CleanupEnvSection } from './CleanupEnvSection';
+import { PlatformCleanupSection } from './PlatformCleanupSection';
 
 /**
- * 画面3: Claude Code (CLI) のディレクトリクリーンアップ。
- * native セクションに加え、Windows では Claude 入り WSL distro を別セクションで表示する。
+ * 画面3: クリーンアップ。
+ * Windows / macOS / Linux / WSL distro といったプラットフォーム単位でセクションを並べる。
+ * 各セクションが Claude Code（~/.claude）と その他のツール（~/.serena 等）の両方をまとめて扱う。
  */
 export const Cleanup: React.FC = () => {
     const { t } = useTranslation();
     const [environments, setEnvironments] = useState<{ env: ClaudeEnvironment; label: string }[]>([]);
     const [loading, setLoading] = useState(true);
-    const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: 'success' | 'error' | 'warning';
+    }>({
         open: false,
         message: '',
         severity: 'success',
@@ -22,8 +27,19 @@ export const Cleanup: React.FC = () => {
     useEffect(() => {
         const load = async () => {
             try {
-                const envs = await window.api.claudeCleanup.getEnvironments();
-                setEnvironments(envs);
+                const [claudeEnvs, otherEnvs] = await Promise.all([
+                    window.api.claudeCleanup.getEnvironments(),
+                    window.api.claudeCleanup.getOtherEnvironments(),
+                ]);
+                // Claude Code を持つ環境と Serena 等を持つ環境の和集合（envId で重複排除）
+                const merged = new Map<string, { env: ClaudeEnvironment; label: string }>();
+                for (const e of [...claudeEnvs, ...otherEnvs]) {
+                    const id = envId(e.env);
+                    if (!merged.has(id)) {
+                        merged.set(id, e);
+                    }
+                }
+                setEnvironments(Array.from(merged.values()));
             } catch (error) {
                 console.error('Failed to load cleanup environments:', error);
             } finally {
@@ -33,7 +49,7 @@ export const Cleanup: React.FC = () => {
         load();
     }, []);
 
-    const notify = (message: string, severity: 'success' | 'error') => {
+    const notify = (message: string, severity: 'success' | 'error' | 'warning') => {
         setSnackbar({ open: true, message, severity });
     };
 
@@ -62,7 +78,7 @@ export const Cleanup: React.FC = () => {
                     <Typography variant='h6' sx={{ mb: 1 }}>
                         {label}
                     </Typography>
-                    <CleanupEnvSection env={env} label={label} onNotify={notify} />
+                    <PlatformCleanupSection env={env} label={label} onNotify={notify} />
                 </Box>
             ))}
 
@@ -77,7 +93,7 @@ export const Cleanup: React.FC = () => {
                             <Typography variant='h6' sx={{ mb: 1 }}>
                                 {t('cleanup.wslSection', { distro: label })}
                             </Typography>
-                            <CleanupEnvSection env={env} label={label} onNotify={notify} />
+                            <PlatformCleanupSection env={env} label={label} onNotify={notify} />
                         </Box>
                     ))}
                 </>

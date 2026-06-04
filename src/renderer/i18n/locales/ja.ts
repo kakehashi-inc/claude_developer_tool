@@ -44,18 +44,20 @@ export default {
         description:
             '~/.claude 配下の履歴・キャッシュ・一時ファイル・ログを削除します。ディスク容量の回収に加え、動作速度の改善や、一時的な内容がメモリーに残って挙動が不可解になった状態の解消にも役立ちます。',
         wslSection: 'WSL: {{distro}}',
-        deleteSelected: '選択を削除',
+        deleteSelected: '選択済みを削除',
         cancel: 'キャンセル',
         confirmTitle: 'クリーンアップの確認',
-        confirmBody: '{{count}} 件を削除して {{size}} を回収します。元に戻せません。よろしいですか？',
+        confirmBody: '選択した {{count}} 件を削除します。元に戻せません。よろしいですか？',
         reclaimable: '{{count}} 件選択中、回収可能 {{size}}',
         noCandidates: 'クリーンアップ対象が見つかりません',
         inUseWarning:
             '実行中の Claude Code セッションがあると一部ディレクトリの削除に失敗することがあります。削除前にセッションを終了してください。',
         deleteSuccess: 'クリーンアップが完了しました',
+        deletePartial: '使用中のファイルがあったため、一部をスキップしました',
         deleteError: '一部の項目の削除に失敗しました',
         columnName: 'ディレクトリ',
         columnDescription: '説明',
+        columnFiles: 'ファイル数',
         columnSize: 'サイズ',
         dir: {
             projects: 'projects',
@@ -78,6 +80,19 @@ export default {
             sessionEnv: 'セッションごとに保存される環境変数などのデータ。',
             tasks: 'バックグラウンドタスクの状態・一時ファイル。',
             backups: '自動保存された旧 ~/.claude.json のバックアップ。',
+        },
+        other: {
+            sectionTitle: 'その他のツール',
+            registered: '{{count}} 件登録',
+            columnMetric: '状態',
+            label: {
+                serenaProjects: 'Serena 登録プロジェクト',
+                serenaLogs: 'Serena ログ',
+            },
+            desc: {
+                serenaProjects: 'Serena に登録されたプロジェクト一覧を空にします（設定・コメントは保持）。',
+                serenaLogs: 'Serena が出力したログを削除します。',
+            },
         },
     },
     nav: {

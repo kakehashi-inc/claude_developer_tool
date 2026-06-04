@@ -47,15 +47,17 @@ export default {
         deleteSelected: 'Delete Selected',
         cancel: 'Cancel',
         confirmTitle: 'Confirm Cleanup',
-        confirmBody: 'Delete {{count}} item(s) and reclaim {{size}}? This cannot be undone.',
+        confirmBody: 'Delete {{count}} selected item(s)? This cannot be undone.',
         reclaimable: '{{count}} item(s) selected, {{size}} reclaimable',
         noCandidates: 'No cleanup targets found',
         inUseWarning:
             'Close running Claude Code sessions before cleanup, otherwise some directories may fail to delete.',
         deleteSuccess: 'Cleanup completed',
+        deletePartial: 'Some items were skipped because files were in use',
         deleteError: 'Failed to clean up some items',
         columnName: 'Directory',
         columnDescription: 'Description',
+        columnFiles: 'Files',
         columnSize: 'Size',
         dir: {
             projects: 'projects',
@@ -78,6 +80,24 @@ export default {
             sessionEnv: 'Environment variables and data saved per session.',
             tasks: 'State and temporary files for background tasks.',
             backups: 'Auto-saved backups of previous ~/.claude.json files.',
+        },
+        other: {
+            sectionTitle: 'Other tools',
+            execute: 'Run Selected',
+            executeSuccess: 'Cleanup completed',
+            executeError: 'Failed to run some items',
+            confirmTitle: 'Confirm Cleanup',
+            confirmBody: 'Run {{count}} selected item(s)? This cannot be undone.',
+            registered: '{{count}} registered',
+            columnMetric: 'Status',
+            label: {
+                serenaProjects: 'Serena projects',
+                serenaLogs: 'Serena logs',
+            },
+            desc: {
+                serenaProjects: "Clears Serena's registered project list (keeps settings and comments).",
+                serenaLogs: 'Deletes logs produced by Serena.',
+            },
         },
     },
     nav: {

@@ -45,6 +45,7 @@ function decodeWslBuffer(buf: Buffer): string {
 export class WslDetector {
     private available: boolean | null = null;
     private distrosCache: WslDistroInfo[] | null = null;
+    private serenaDistrosCache: string[] | null = null;
     private homeCache = new Map<string, string>();
 
     /** 現在のプラットフォームが Windows か */
@@ -151,6 +152,45 @@ export class WslDetector {
         return result;
     }
 
+    /** distro 内に ~/.serena ディレクトリが存在するか */
+    async hasSerena(distro: string): Promise<boolean> {
+        try {
+            await execFileBuffer('wsl.exe', ['-d', distro, '--', 'bash', '-lc', 'test -d ~/.serena']);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * ~/.serena を持つ WSL distro 名の一覧を返す（Claude Code の有無とは独立に検出）。
+     * Windows 以外、または WSL 未導入の場合は空配列。
+     */
+    async getSerenaDistros(): Promise<string[]> {
+        if (this.serenaDistrosCache !== null) {
+            return this.serenaDistrosCache;
+        }
+        if (!(await this.isAvailable())) {
+            this.serenaDistrosCache = [];
+            return this.serenaDistrosCache;
+        }
+
+        const result: string[] = [];
+        try {
+            const distros = await this.rawListDistros();
+            for (const distro of distros) {
+                if (await this.hasSerena(distro)) {
+                    result.push(distro);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to enumerate WSL Serena distros:', error);
+        }
+
+        this.serenaDistrosCache = result;
+        return result;
+    }
+
     /**
      * distro 内で bash コマンドを実行し、stdout を Buffer で返す。
      * ClaudeFs のコマンドモードフォールバックから利用する。
@@ -164,6 +204,7 @@ export class WslDetector {
     invalidate(): void {
         this.available = null;
         this.distrosCache = null;
+        this.serenaDistrosCache = null;
         this.homeCache.clear();
     }
 }
