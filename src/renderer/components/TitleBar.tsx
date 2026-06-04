@@ -16,22 +16,41 @@ import {
     CropSquare as MaximizeIcon,
     FullscreenExit as RestoreIcon,
     Close as CloseIcon,
+    Dashboard as DashboardIcon,
     Storage as StorageIcon,
+    Terminal as TerminalIcon,
+    CleaningServices as CleanupIcon,
     PowerSettingsNew as ExitIcon,
     Brightness4 as DarkIcon,
     Brightness7 as LightIcon,
     Language as LanguageIcon,
 } from '@mui/icons-material';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from 'react-i18next';
 
+// 画面（ルート）定義。タイトルキャプション・キャプションメニュー・バーガーメニューで共有する。
+const SCREENS: { path: string; titleKey: string; navKey: string; Icon: typeof StorageIcon }[] = [
+    { path: '/', titleKey: 'dashboard.title', navKey: 'nav.dashboard', Icon: DashboardIcon },
+    { path: '/claude-desktop', titleKey: 'claudeDesktop.title', navKey: 'nav.claudeDesktop', Icon: StorageIcon },
+    { path: '/claude-code', titleKey: 'claudeCode.title', navKey: 'nav.claudeCode', Icon: TerminalIcon },
+    { path: '/cleanup', titleKey: 'cleanup.title', navKey: 'nav.cleanup', Icon: CleanupIcon },
+];
+
 export const TitleBar: React.FC = () => {
     const { t, i18n } = useTranslation();
+    const navigate = useNavigate();
+    const location = useLocation();
     const { theme, language, setTheme, setLanguage } = useAppStore();
     const [isMaximized, setIsMaximized] = useState(false);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [langMenuAnchor, setLangMenuAnchor] = useState<null | HTMLElement>(null);
     const [appVersion, setAppVersion] = useState<string>('');
+
+    const handleNavigate = (path: string) => {
+        navigate(path);
+        handleMenuClose();
+    };
 
     useEffect(() => {
         window.api.window.isMaximized().then(setIsMaximized);
@@ -125,17 +144,28 @@ export const TitleBar: React.FC = () => {
 
             {/* 右側：ツールメニュー */}
             <Box sx={{ display: 'flex', alignItems: 'center', WebkitAppRegion: 'no-drag' }}>
-                {/* 機能アイコン */}
-                <Tooltip title={t('claudeDesktop.title')}>
-                    <IconButton
-                        size='medium'
-                        sx={{
-                            color: 'text.primary',
-                        }}
-                    >
-                        <StorageIcon />
-                    </IconButton>
-                </Tooltip>
+                {/* 画面切替アイコン（4 機能。アクティブを強調しワンクリック切替） */}
+                {SCREENS.map(screen => {
+                    const active = location.pathname === screen.path;
+                    return (
+                        <Tooltip key={screen.path} title={t(screen.navKey)}>
+                            <IconButton
+                                size='medium'
+                                onClick={() => navigate(screen.path)}
+                                sx={{
+                                    color: active ? 'primary.main' : 'text.secondary',
+                                    bgcolor: active ? 'action.selected' : 'transparent',
+                                    '&:hover': { bgcolor: 'action.hover' },
+                                }}
+                            >
+                                <screen.Icon />
+                            </IconButton>
+                        </Tooltip>
+                    );
+                })}
+
+                {/* スペーサー */}
+                <Box sx={{ width: 16 }} />
 
                 {/* テーマ切り替え */}
                 <Tooltip title={t('theme.' + (theme === 'light' ? 'dark' : 'light'))}>
@@ -214,15 +244,21 @@ export const TitleBar: React.FC = () => {
                         horizontal: 'right',
                     }}
                 >
-                    <MenuItem>
-                        <ListItemIcon>
-                            <StorageIcon />
-                        </ListItemIcon>
-                        <ListItemText
-                            primary={t('claudeDesktop.title')}
-                            slotProps={{ primary: { sx: { fontSize: '0.95rem' } } }}
-                        />
-                    </MenuItem>
+                    {SCREENS.map(screen => (
+                        <MenuItem
+                            key={screen.path}
+                            selected={location.pathname === screen.path}
+                            onClick={() => handleNavigate(screen.path)}
+                        >
+                            <ListItemIcon>
+                                <screen.Icon />
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={t(screen.navKey)}
+                                slotProps={{ primary: { sx: { fontSize: '0.95rem' } } }}
+                            />
+                        </MenuItem>
+                    ))}
                     <Divider />
                     <MenuItem onClick={handleExit}>
                         <ListItemIcon>

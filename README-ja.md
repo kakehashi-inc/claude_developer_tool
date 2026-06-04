@@ -6,11 +6,18 @@
 
 ## 機能
 
-- **Claude Desktop MCP Manager**:
-  - 各OS（Windows/macOS/Linux）のClaude Desktop設定ファイルを自動検出
-  - 開発者/ローカルMCPサーバーの有効化/無効化
+- **Claude Desktop MCP 管理**:
+  - 各OS（Windows/macOS/Linux）のClaude Desktop設定を自動検出
+  - MCPサーバーの有効化/無効化
   - 有効なMCPサーバーのドラッグ＆ドロップによる並べ替え
   - Claude Desktopの起動/再起動（Windows/macOSのみ）
+- **Claude Code MCP 管理**:
+  - Claude Code（CLI）のMCPサーバーの有効化/無効化/並べ替え
+  - WSL を利用している場合は、WSL 内の Claude Code も別セクションで管理
+- **Claude Code クリーンアップ**:
+  - 不要になった履歴・キャッシュ・一時データを容量付きで一覧表示し、選択して削除
+  - ディスク容量の回収に加え、動作速度の改善や、過去の不要なメモリーによる不可解な挙動の解消に役立ちます
+  - プロジェクト単位の履歴は個別／一括のどちらでも削除可能
 - **i18n/テーマ**: 日本語/英語、ライト/ダークモード対応
 
 ## 対応OS
@@ -20,14 +27,6 @@
 - Linux (Debian系/RHEL系)
 
 注記: 本プロジェクトは Windows ではコード署名を行っていません。SmartScreen が警告を表示する場合は「詳細情報」→「実行」を選択してください。
-
-### MCPサーバーの無効化
-
-MCPサーバーを無効化すると、`claude_desktop_config.json` から該当サーバーの設定が削除され、同じディレクトリの `claude_desktop_config_disabled.json` に移動されます。設定は加工されずそのまま移動されます。
-
-### MCPサーバーの有効化
-
-無効化されたMCPサーバーを有効化すると、`claude_desktop_config_disabled.json` から `claude_desktop_config.json` に設定が戻されます。
 
 ## 開発者向けリファレンス
 
@@ -116,7 +115,7 @@ src/
 ### 使用技術
 
 - **Electron**
-- **React (MUI v7)**
+- **React (MUI v9)**
 - **TypeScript**
 - **Zustand**
 - **i18next**

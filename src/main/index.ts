@@ -1,14 +1,21 @@
 import { app, BrowserWindow } from 'electron';
 import { join } from 'path';
 import { ClaudeDesktopManager } from './services/ClaudeDesktopManager';
+import { ClaudeCodeManager } from './services/ClaudeCodeManager';
+import { ClaudeCleanupManager } from './services/ClaudeCleanupManager';
+import { WslDetector } from './services/wsl/WslDetector';
 import { UpdaterService } from './services/UpdaterService';
 import { registerClaudeDesktopHandlers } from './ipc/claudeDesktopHandlers';
+import { registerClaudeCodeHandlers } from './ipc/claudeCodeHandlers';
+import { registerClaudeCleanupHandlers } from './ipc/claudeCleanupHandlers';
 import { registerWindowHandlers } from './ipc/windowHandlers';
 import { registerSystemHandlers } from './ipc/systemHandlers';
 import { registerUpdaterHandlers } from './ipc/updaterHandlers';
 
 let mainWindow: BrowserWindow | null = null;
 let claudeDesktopManager: ClaudeDesktopManager;
+let claudeCodeManager: ClaudeCodeManager;
+let claudeCleanupManager: ClaudeCleanupManager;
 let updaterService: UpdaterService;
 
 const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
@@ -76,12 +83,19 @@ if (!gotTheLock) {
         // Claude Desktop Managerを初期化
         claudeDesktopManager = new ClaudeDesktopManager();
 
+        // WSL 検出器を生成し、Claude Code 系マネージャーで共有
+        const wslDetector = new WslDetector();
+        claudeCodeManager = new ClaudeCodeManager(wslDetector);
+        claudeCleanupManager = new ClaudeCleanupManager(wslDetector);
+
         // 自動アップデートサービスを初期化
         updaterService = new UpdaterService();
         updaterService.initialize();
 
         // IPCハンドラーを登録
         registerClaudeDesktopHandlers(claudeDesktopManager);
+        registerClaudeCodeHandlers(claudeCodeManager);
+        registerClaudeCleanupHandlers(claudeCleanupManager);
         registerWindowHandlers();
         registerSystemHandlers();
         registerUpdaterHandlers(updaterService);

@@ -1,0 +1,256 @@
+import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync, rmSync, mkdirSync } from 'fs';
+import { homedir } from 'os';
+import { join, dirname } from 'path';
+import { ClaudeEnvironment } from '../../../shared/types';
+import { recursiveDirSize } from '../../utils/fsSize';
+import { WslDetector } from './WslDetector';
+
+/**
+ * ClaudeEnvironment（native / wsl）に対するファイル操作を抽象化する。
+ *
+ * - native: os.homedir() を基点に通常の fs を使用。
+ * - wsl: \\wsl.localhost\<distro>\<home> もしくは \\wsl$\<distro>\<home> を UNC 基点として
+ *        通常の fs を使用。どちらの UNC も到達できない場合は wsl コマンドモードへフォールバックする。
+ *
+ * relPath はすべて Linux ホームからの相対パス（例: '.claude.json', '.claude/projects'）。
+ */
+export class ClaudeFs {
+    private readonly env: ClaudeEnvironment;
+    private readonly detector: WslDetector;
+
+    // WSL 用に解決済みの UNC 基点（例: \\wsl.localhost\Ubuntu-24.04\home\yendo）。
+    // null = 未解決、'' = UNC 不可（コマンドモードを使う）。
+    private uncBase: string | null = null;
+
+    constructor(env: ClaudeEnvironment, detector: WslDetector) {
+        this.env = env;
+        this.detector = detector;
+    }
+
+    private get isWsl(): boolean {
+        return this.env.kind === 'wsl';
+    }
+
+    private get distro(): string {
+        if (!this.env.distro) {
+            throw new Error('WSL environment requires a distro name');
+        }
+        return this.env.distro;
+    }
+
+    /**
+     * WSL の UNC 基点を解決する。到達できない場合は '' を返し、コマンドモードへ切り替える。
+     */
+    private async resolveUncBase(): Promise<string> {
+        if (this.uncBase !== null) {
+            return this.uncBase;
+        }
+        const distro = this.distro;
+        let home: string;
+        try {
+            home = await this.detector.resolveHome(distro);
+        } catch {
+            home = '';
+        }
+        if (home) {
+            // Linux パス /home/user を Windows UNC の相対部分に変換
+            const rel = home.replace(/^\//, '').replace(/\//g, '\\');
+            const candidates = [`\\\\wsl.localhost\\${distro}\\${rel}`, `\\\\wsl$\\${distro}\\${rel}`];
+            for (const base of candidates) {
+                try {
+                    if (existsSync(base)) {
+                        this.uncBase = base;
+                        return base;
+                    }
+                } catch {
+                    // 次の候補へ
+                }
+            }
+        }
+        // UNC 不可 → コマンドモード
+        this.uncBase = '';
+        return '';
+    }
+
+    /** native のホーム基点 */
+    private nativeBase(): string {
+        return homedir();
+    }
+
+    /**
+     * relPath を実 OS パス（native の絶対パス、または WSL UNC の絶対パス）に解決する。
+     * コマンドモードが必要な場合は null を返す。
+     */
+    private async resolveAbs(relPath: string): Promise<string | null> {
+        if (!this.isWsl) {
+            return join(this.nativeBase(), relPath);
+        }
+        const base = await this.resolveUncBase();
+        if (!base) {
+            return null; // コマンドモード
+        }
+        const rel = relPath.replace(/\//g, '\\');
+        return `${base}\\${rel}`;
+    }
+
+    /** WSL コマンドモードで使う Linux 絶対パス */
+    private async linuxPath(relPath: string): Promise<string> {
+        const home = await this.detector.resolveHome(this.distro);
+        return `${home}/${relPath}`;
+    }
+
+    /** 表示用のパス文字列（実際のアクセス可否に関わらず人間に分かる形） */
+    async displayPath(relPath: string): Promise<string> {
+        if (!this.isWsl) {
+            return join(this.nativeBase(), relPath);
+        }
+        try {
+            const home = await this.detector.resolveHome(this.distro);
+            return `${home}/${relPath}`;
+        } catch {
+            return `~/${relPath}`;
+        }
+    }
+
+    async exists(relPath: string): Promise<boolean> {
+        const abs = await this.resolveAbs(relPath);
+        if (abs !== null) {
+            return existsSync(abs);
+        }
+        // コマンドモード
+        try {
+            await this.detector.runInDistro(this.distro, `test -e ${this.shellQuote(await this.linuxPath(relPath))}`);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    async readJson<T = unknown>(relPath: string): Promise<T | null> {
+        const abs = await this.resolveAbs(relPath);
+        try {
+            if (abs !== null) {
+                if (!existsSync(abs)) {
+                    return null;
+                }
+                const content = readFileSync(abs, 'utf-8');
+                return JSON.parse(content) as T;
+            }
+            // コマンドモード
+            const lp = await this.linuxPath(relPath);
+            const buf = await this.detector.runInDistro(this.distro, `cat ${this.shellQuote(lp)} 2>/dev/null || true`);
+            const content = buf.toString('utf8');
+            if (!content.trim()) {
+                return null;
+            }
+            return JSON.parse(content) as T;
+        } catch (error) {
+            console.error(`Failed to read JSON from ${relPath} (${JSON.stringify(this.env)}):`, error);
+            return null;
+        }
+    }
+
+    async writeJson(relPath: string, data: unknown): Promise<void> {
+        const content = JSON.stringify(data, null, 2);
+        const abs = await this.resolveAbs(relPath);
+        if (abs !== null) {
+            mkdirSync(dirname(abs), { recursive: true });
+            writeFileSync(abs, content, 'utf-8');
+            return;
+        }
+        // コマンドモード: base64 で投入してエスケープ問題を回避
+        const lp = await this.linuxPath(relPath);
+        const b64 = Buffer.from(content, 'utf8').toString('base64');
+        await this.detector.runInDistro(
+            this.distro,
+            `mkdir -p ${this.shellQuote(this.dirnamePosix(lp))} && printf %s ${this.shellQuote(b64)} | base64 -d > ${this.shellQuote(lp)}`
+        );
+    }
+
+    async deleteFile(relPath: string): Promise<void> {
+        const abs = await this.resolveAbs(relPath);
+        if (abs !== null) {
+            if (existsSync(abs)) {
+                unlinkSync(abs);
+            }
+            return;
+        }
+        const lp = await this.linuxPath(relPath);
+        await this.detector.runInDistro(this.distro, `rm -f ${this.shellQuote(lp)}`);
+    }
+
+    /** ディレクトリ内のサブディレクトリ名一覧（ファイルは除く） */
+    async listDirs(relPath: string): Promise<string[]> {
+        const abs = await this.resolveAbs(relPath);
+        if (abs !== null) {
+            if (!existsSync(abs)) {
+                return [];
+            }
+            try {
+                return readdirSync(abs, { withFileTypes: true })
+                    .filter(d => d.isDirectory())
+                    .map(d => d.name);
+            } catch {
+                return [];
+            }
+        }
+        // コマンドモード
+        try {
+            const lp = await this.linuxPath(relPath);
+            const buf = await this.detector.runInDistro(
+                this.distro,
+                `find ${this.shellQuote(lp)} -mindepth 1 -maxdepth 1 -type d -printf '%f\\n' 2>/dev/null || true`
+            );
+            return buf
+                .toString('utf8')
+                .split(/\r?\n/)
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+        } catch {
+            return [];
+        }
+    }
+
+    /** ディレクトリの再帰サイズ（バイト）。存在しなければ 0。 */
+    async dirSize(relPath: string): Promise<number> {
+        const abs = await this.resolveAbs(relPath);
+        if (abs !== null) {
+            return recursiveDirSize(abs);
+        }
+        // コマンドモード: du -sb で高速にバイト数取得
+        try {
+            const lp = await this.linuxPath(relPath);
+            const buf = await this.detector.runInDistro(
+                this.distro,
+                `du -sb ${this.shellQuote(lp)} 2>/dev/null | cut -f1 || echo 0`
+            );
+            const n = parseInt(buf.toString('utf8').trim(), 10);
+            return Number.isFinite(n) ? n : 0;
+        } catch {
+            return 0;
+        }
+    }
+
+    /** ディレクトリを丸ごと削除する（再帰）。 */
+    async removeDir(relPath: string): Promise<void> {
+        const abs = await this.resolveAbs(relPath);
+        if (abs !== null) {
+            rmSync(abs, { recursive: true, force: true });
+            return;
+        }
+        const lp = await this.linuxPath(relPath);
+        await this.detector.runInDistro(this.distro, `rm -rf ${this.shellQuote(lp)}`);
+    }
+
+    // ---- ヘルパー ----
+
+    private shellQuote(s: string): string {
+        // POSIX シェル向けのシングルクォートエスケープ
+        return `'${s.replace(/'/g, `'\\''`)}'`;
+    }
+
+    private dirnamePosix(p: string): string {
+        const idx = p.lastIndexOf('/');
+        return idx <= 0 ? '/' : p.slice(0, idx);
+    }
+}

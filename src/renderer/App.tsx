@@ -4,7 +4,10 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from './store/useAppStore';
 import { Layout } from './components/Layout';
+import { Dashboard } from './components/Dashboard';
 import { ClaudeDesktopManager } from './components/ClaudeDesktopManager';
+import { ClaudeCodeManager } from './components/ClaudeCodeManager';
+import { Cleanup } from './components/Cleanup';
 import { UpdateNotification } from './components/UpdateNotification';
 
 const isDev = import.meta.env.DEV;
@@ -51,7 +54,10 @@ export const App: React.FC = () => {
             <Router>
                 <Layout>
                     <Routes>
-                        <Route path='/' element={<ClaudeDesktopManager />} />
+                        <Route path='/' element={<Dashboard />} />
+                        <Route path='/claude-desktop' element={<ClaudeDesktopManager />} />
+                        <Route path='/claude-code' element={<ClaudeCodeManager />} />
+                        <Route path='/cleanup' element={<Cleanup />} />
                     </Routes>
                 </Layout>
                 <UpdateNotification />

@@ -23,6 +23,56 @@ export const CLAUDE_CONFIG_PATHS: Record<OSType, string> = {
 export const CLAUDE_CONFIG_FILENAME = 'claude_desktop_config.json';
 export const CLAUDE_CONFIG_DISABLED_FILENAME = 'claude_desktop_config_disabled.json';
 
+// Claude Code (CLI) の設定ファイル（ホーム直下）
+export const CLAUDE_CODE_CONFIG_FILENAME = '.claude.json';
+// 無効化した MCP の退避先（ホーム直下、ドットを増やさない固定名）
+export const CLAUDE_CODE_DISABLED_FILENAME = '.claude-disabled-mcp.json';
+// Claude Code のデータディレクトリ（ホーム直下）
+export const CLAUDE_DIR = '.claude';
+
+// Claude Code (CLI) MCP 管理用 IPC チャンネル
+export const CLAUDE_CODE_CHANNELS = {
+    GET_ENVIRONMENTS: 'claude-code:get-environments',
+    GET_MCP_SERVERS: 'claude-code:get-mcp-servers',
+    ENABLE: 'claude-code:enable-mcp-server',
+    DISABLE: 'claude-code:disable-mcp-server',
+    REORDER: 'claude-code:reorder-mcp-servers',
+    REORDER_DISABLED: 'claude-code:reorder-disabled-mcp-servers',
+} as const;
+
+// Claude Code クリーンアップ用 IPC チャンネル
+export const CLAUDE_CLEANUP_CHANNELS = {
+    GET_ENVIRONMENTS: 'claude-cleanup:get-environments',
+    SCAN: 'claude-cleanup:scan',
+    DELETE: 'claude-cleanup:delete',
+} as const;
+
+// クリーンアップ候補ディレクトリ（~/.claude 配下、表示順・projects 先頭）。
+// 対象は履歴／キャッシュ／一時／ログのみ。plugins/skills（インストール資産）や
+// daemon/ide（稼働中ランタイム状態）、jobs/teams（設定）は対象外。
+// backups は復旧用セーフティネットのためデフォルト未チェック。
+export interface CleanupCandidateSpec {
+    key: string;
+    defaultChecked: boolean;
+    expandable?: boolean;
+}
+
+// デフォルトはすべてチェック OFF（ユーザーが明示的に選択する）。
+export const CLEANUP_CANDIDATES: CleanupCandidateSpec[] = [
+    { key: 'projects', defaultChecked: false, expandable: true },
+    { key: 'file-history', defaultChecked: false },
+    { key: 'shell-snapshots', defaultChecked: false },
+    { key: 'cache', defaultChecked: false },
+    { key: 'debug', defaultChecked: false },
+    { key: 'sessions', defaultChecked: false },
+    { key: 'session-env', defaultChecked: false },
+    { key: 'tasks', defaultChecked: false },
+    { key: 'backups', defaultChecked: false },
+];
+
+// projects ディレクトリのキー（特別扱い用）
+export const CLEANUP_PROJECTS_KEY = 'projects';
+
 // 自動アップデート用 IPC チャンネル
 export const UPDATER_CHANNELS = {
     CHECK: 'updater:check',

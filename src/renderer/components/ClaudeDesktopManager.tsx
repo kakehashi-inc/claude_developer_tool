@@ -16,6 +16,7 @@ import {
     AlertTitle,
     Snackbar,
     Tooltip,
+    Chip,
 } from '@mui/material';
 import {
     ToggleOn as EnableIcon,
@@ -262,9 +263,14 @@ export const ClaudeDesktopManager: React.FC = () => {
                                             <DragIcon sx={{ color: 'action.disabled' }} />
                                         </TableCell>
                                         <TableCell>
-                                            <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
-                                                {server.name}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
+                                                    {server.name}
+                                                </Typography>
+                                                {server.config.type && (
+                                                    <Chip label={server.config.type} size='small' variant='outlined' />
+                                                )}
+                                            </Box>
                                         </TableCell>
                                         <TableCell>
                                             <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
@@ -337,9 +343,14 @@ export const ClaudeDesktopManager: React.FC = () => {
                                             <DragIcon sx={{ color: 'action.disabled' }} />
                                         </TableCell>
                                         <TableCell>
-                                            <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
-                                                {server.name}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
+                                                    {server.name}
+                                                </Typography>
+                                                {server.config.type && (
+                                                    <Chip label={server.config.type} size='small' variant='outlined' />
+                                                )}
+                                            </Box>
                                         </TableCell>
                                         <TableCell>
                                             <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>

@@ -1,5 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ClaudeDesktopInfo, MCPServerInfo, UpdateState } from '../shared/types';
+import type {
+    ClaudeCodeEnvInfo,
+    ClaudeDesktopInfo,
+    ClaudeEnvironment,
+    CleanupEnvReport,
+    CleanupSelection,
+    MCPServerInfo,
+    UpdateState,
+} from '../shared/types';
 
 // preload はサンドボックス下で単一ファイル実行されるため、共有定数を import せずに文字列を直接記述する
 // (shared/constants.ts の UPDATER_CHANNELS と一致させること)
@@ -10,6 +18,25 @@ const UPDATER_CHANNELS = {
     GET_STATE: 'updater:get-state',
     STATE_CHANGED: 'updater:state-changed',
 } as const;
+
+// preload はサンドボックス下のため定数 import 不可。以下のチャンネル文字列は
+// shared/constants.ts の CLAUDE_CODE_CHANNELS / CLAUDE_CLEANUP_CHANNELS と一致させること。
+const CLAUDE_CODE_CHANNELS = {
+    GET_ENVIRONMENTS: 'claude-code:get-environments',
+    GET_MCP_SERVERS: 'claude-code:get-mcp-servers',
+    ENABLE: 'claude-code:enable-mcp-server',
+    DISABLE: 'claude-code:disable-mcp-server',
+    REORDER: 'claude-code:reorder-mcp-servers',
+    REORDER_DISABLED: 'claude-code:reorder-disabled-mcp-servers',
+} as const;
+
+const CLAUDE_CLEANUP_CHANNELS = {
+    GET_ENVIRONMENTS: 'claude-cleanup:get-environments',
+    SCAN: 'claude-cleanup:scan',
+    DELETE: 'claude-cleanup:delete',
+} as const;
+
+type MCPServers = { enabled: MCPServerInfo[]; disabled: MCPServerInfo[] };
 
 // レンダラープロセスに公開するAPI
 const api = {
@@ -34,6 +61,34 @@ const api = {
             ipcRenderer.invoke('claude-desktop:reorder-disabled-mcp-servers', serverNames),
 
         restart: (): Promise<void> => ipcRenderer.invoke('claude-desktop:restart'),
+    },
+    claudeCode: {
+        getEnvironments: (): Promise<ClaudeCodeEnvInfo[]> => ipcRenderer.invoke(CLAUDE_CODE_CHANNELS.GET_ENVIRONMENTS),
+
+        getMCPServers: (env: ClaudeEnvironment): Promise<MCPServers> =>
+            ipcRenderer.invoke(CLAUDE_CODE_CHANNELS.GET_MCP_SERVERS, env),
+
+        enableMCPServer: (env: ClaudeEnvironment, serverName: string): Promise<MCPServers> =>
+            ipcRenderer.invoke(CLAUDE_CODE_CHANNELS.ENABLE, env, serverName),
+
+        disableMCPServer: (env: ClaudeEnvironment, serverName: string): Promise<MCPServers> =>
+            ipcRenderer.invoke(CLAUDE_CODE_CHANNELS.DISABLE, env, serverName),
+
+        reorderMCPServers: (env: ClaudeEnvironment, serverNames: string[]): Promise<MCPServers> =>
+            ipcRenderer.invoke(CLAUDE_CODE_CHANNELS.REORDER, env, serverNames),
+
+        reorderDisabledMCPServers: (env: ClaudeEnvironment, serverNames: string[]): Promise<MCPServers> =>
+            ipcRenderer.invoke(CLAUDE_CODE_CHANNELS.REORDER_DISABLED, env, serverNames),
+    },
+    claudeCleanup: {
+        getEnvironments: (): Promise<{ env: ClaudeEnvironment; label: string }[]> =>
+            ipcRenderer.invoke(CLAUDE_CLEANUP_CHANNELS.GET_ENVIRONMENTS),
+
+        scan: (env: ClaudeEnvironment): Promise<CleanupEnvReport> =>
+            ipcRenderer.invoke(CLAUDE_CLEANUP_CHANNELS.SCAN, env),
+
+        delete: (env: ClaudeEnvironment, selection: CleanupSelection): Promise<CleanupEnvReport> =>
+            ipcRenderer.invoke(CLAUDE_CLEANUP_CHANNELS.DELETE, env, selection),
     },
     window: {
         minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize'),

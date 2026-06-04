@@ -7,10 +7,17 @@ English | [日本語](README-ja.md)
 ## Features
 
 - **Claude Desktop MCP Manager**:
-  - Auto-detect Claude Desktop configuration files for each OS (Windows/macOS/Linux)
-  - Enable/disable developer/local MCP servers
+  - Auto-detect Claude Desktop configuration for each OS (Windows/macOS/Linux)
+  - Enable/disable MCP servers
   - Drag & drop reordering of enabled MCP servers
   - Start/restart Claude Desktop (Windows/macOS only)
+- **Claude Code MCP Manager**:
+  - Enable/disable/reorder Claude Code (CLI) MCP servers
+  - When you use WSL, also manage Claude Code inside WSL in a separate section
+- **Claude Code Cleanup**:
+  - List unneeded history, cache, and temporary data with their sizes and delete the selected ones
+  - Besides reclaiming disk space, this can improve performance and clear stale memory that causes unexpected behavior
+  - Per-project history can be cleaned individually or all at once
 - **i18n/theme**: Japanese/English, light/dark modes
 
 ## Supported OS
@@ -20,14 +27,6 @@ English | [日本語](README-ja.md)
 - Linux (Debian-based/RHEL-based)
 
 Note: This project is not code-signed on Windows. If SmartScreen displays a warning, click "More info" → "Run anyway".
-
-### Disabling MCP Servers
-
-When you disable an MCP server, its configuration is removed from `claude_desktop_config.json` and moved to `claude_desktop_config_disabled.json` in the same directory. The configuration is moved as-is without modification.
-
-### Enabling MCP Servers
-
-When you enable a disabled MCP server, the configuration is moved back from `claude_desktop_config_disabled.json` to `claude_desktop_config.json`.
 
 ## Developer Reference
 
@@ -116,7 +115,7 @@ src/
 ### Tech Stack
 
 - **Electron**
-- **React (MUI v7)**
+- **React (MUI v9)**
 - **TypeScript**
 - **Zustand**
 - **i18next**
