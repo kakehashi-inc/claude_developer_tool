@@ -19,6 +19,11 @@ export class UpdaterService {
     private downloadRequested = false;
     private startupCheckScheduled = false;
     private initialized = false;
+    // Set once the user confirms the install. While true, the app's
+    // 'window-all-closed' handler must NOT call app.quit(): on macOS the native
+    // Squirrel updater drives the quit + relaunch itself, and a premature
+    // app.quit() would terminate the process before the update is staged.
+    private installing = false;
 
     initialize(): void {
         if (isUpdaterDisabled) {
@@ -30,7 +35,13 @@ export class UpdaterService {
         this.initialized = true;
 
         autoUpdater.autoDownload = false;
-        autoUpdater.autoInstallOnAppQuit = false;
+        // Must be true so that on macOS electron-updater hands the downloaded
+        // .zip to the native Squirrel updater right after download (it calls
+        // nativeUpdater.checkForUpdates() only when this is true). This stages
+        // the update in the background while the app is still running, so
+        // quitAndInstall() can apply it immediately instead of racing an async
+        // fetch against process termination. See MacUpdater.updateDownloaded().
+        autoUpdater.autoInstallOnAppQuit = true;
         autoUpdater.logger = console;
 
         autoUpdater.on('checking-for-update', () => {
@@ -85,6 +96,10 @@ export class UpdaterService {
         return this.state;
     }
 
+    isInstalling(): boolean {
+        return this.installing;
+    }
+
     async checkForUpdates(): Promise<void> {
         if (isUpdaterDisabled) {
             return;
@@ -124,13 +139,16 @@ export class UpdaterService {
         if (isUpdaterDisabled) {
             return;
         }
+        // Mark the app as installing so 'window-all-closed' won't call
+        // app.quit() out from under the native updater.
+        this.installing = true;
+        // Do NOT manually close the windows here. electron-updater drives the
+        // quit + relaunch itself (on macOS via the native Squirrel updater).
+        // Force-closing the windows triggers 'window-all-closed' -> app.quit(),
+        // which terminates the process before the (async) macOS install can
+        // stage the update, leaving the app un-updated. isForceRunAfter=true
+        // makes the app relaunch after a successful install.
         setImmediate(() => {
-            for (const window of BrowserWindow.getAllWindows()) {
-                if (!window.isDestroyed()) {
-                    window.removeAllListeners('close');
-                    window.close();
-                }
-            }
             autoUpdater.quitAndInstall(false, true);
         });
     }

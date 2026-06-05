@@ -119,6 +119,13 @@ if (!gotTheLock) {
     });
 
     app.on('window-all-closed', () => {
+        // While an update is installing, the updater (native Squirrel on macOS)
+        // owns the quit + relaunch sequence. Calling app.quit() here would
+        // terminate the process before the update is staged, so the update
+        // would silently never apply.
+        if (updaterService?.isInstalling()) {
+            return;
+        }
         app.quit();
     });
 }

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.4.1] - 2026-06-05
+
+### Fixed
+
+- **macOS auto-update**: the app no longer quits without installing the update. The downloaded update is now applied correctly and the app relaunches on the new version.
+
 ## [v0.4.0] - 2026-06-05
 
 ### Added
