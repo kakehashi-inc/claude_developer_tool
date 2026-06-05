@@ -168,6 +168,7 @@ export default {
         error: 'Error',
         success: 'Success',
         loading: 'Loading...',
+        refresh: 'Refresh',
     },
     updater: {
         confirm: 'A new version v{{version}} is available. Update now?',

@@ -163,6 +163,7 @@ export default {
         error: 'エラー',
         success: '成功',
         loading: '読み込み中...',
+        refresh: '再取得',
     },
     updater: {
         confirm: '新しいバージョン v{{version}} が利用可能です。アップデートしますか？',

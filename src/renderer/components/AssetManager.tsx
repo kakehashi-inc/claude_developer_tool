@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Typography, Snackbar, Alert, Divider } from '@mui/material';
+import { Box, Button, Typography, Snackbar, Alert, Divider } from '@mui/material';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
 import type { ClaudeEnvironment } from '../../shared/types';
 import { envId } from '../utils/format';
 import { AssetManagerSection } from './AssetManagerSection';
@@ -25,17 +26,19 @@ export const AssetManager: React.FC = () => {
         severity: 'success',
     });
 
+    const load = async () => {
+        setLoading(true);
+        try {
+            const envs = await window.api.assetManager.getEnvironments();
+            setEnvironments(envs);
+        } catch (error) {
+            console.error('Failed to load asset manager environments:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const load = async () => {
-            try {
-                const envs = await window.api.assetManager.getEnvironments();
-                setEnvironments(envs);
-            } catch (error) {
-                console.error('Failed to load asset manager environments:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
         load();
     }, []);
 
@@ -56,12 +59,24 @@ export const AssetManager: React.FC = () => {
 
     return (
         <Box sx={{ p: 3 }}>
-            <Typography variant='h4' component='h1' sx={{ mb: 1 }}>
-                {t('assetManager.title')}
-            </Typography>
-            <Typography variant='body2' color='text.secondary' sx={{ mb: 3 }}>
-                {t('assetManager.description')}
-            </Typography>
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
+                <Box>
+                    <Typography variant='h4' component='h1' sx={{ mb: 1 }}>
+                        {t('assetManager.title')}
+                    </Typography>
+                    <Typography variant='body2' color='text.secondary'>
+                        {t('assetManager.description')}
+                    </Typography>
+                </Box>
+                <Button
+                    variant='outlined'
+                    startIcon={<RefreshIcon />}
+                    onClick={load}
+                    sx={{ textTransform: 'none', flexShrink: 0 }}
+                >
+                    {t('common.refresh')}
+                </Button>
+            </Box>
 
             {nativeEnvs.map(({ env, label }) => (
                 <Box key={envId(env)}>

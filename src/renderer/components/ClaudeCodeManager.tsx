@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Typography, Snackbar, Alert, Divider } from '@mui/material';
+import { Box, Button, Typography, Snackbar, Alert, Divider } from '@mui/material';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
 import type { ClaudeCodeEnvInfo } from '../../shared/types';
 import { envId } from '../utils/format';
 import { ClaudeEnvMcpSection } from './ClaudeEnvMcpSection';
@@ -19,17 +20,19 @@ export const ClaudeCodeManager: React.FC = () => {
         severity: 'success',
     });
 
+    const load = async () => {
+        setLoading(true);
+        try {
+            const envs = await window.api.claudeCode.getEnvironments();
+            setEnvironments(envs);
+        } catch (error) {
+            console.error('Failed to load Claude Code environments:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const load = async () => {
-            try {
-                const envs = await window.api.claudeCode.getEnvironments();
-                setEnvironments(envs);
-            } catch (error) {
-                console.error('Failed to load Claude Code environments:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
         load();
     }, []);
 
@@ -50,9 +53,14 @@ export const ClaudeCodeManager: React.FC = () => {
 
     return (
         <Box sx={{ p: 3 }}>
-            <Typography variant='h4' component='h1' sx={{ mb: 3 }}>
-                {t('claudeCode.title')}
-            </Typography>
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant='h4' component='h1'>
+                    {t('claudeCode.title')}
+                </Typography>
+                <Button variant='outlined' startIcon={<RefreshIcon />} onClick={load} sx={{ textTransform: 'none' }}>
+                    {t('common.refresh')}
+                </Button>
+            </Box>
 
             {nativeEnvs.map(info => (
                 <Box key={envId(info.env)}>

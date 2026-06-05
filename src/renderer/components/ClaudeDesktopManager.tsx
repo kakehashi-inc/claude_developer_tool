@@ -21,7 +21,8 @@ import {
 import {
     ToggleOn as EnableIcon,
     ToggleOff as DisableIcon,
-    Refresh as RestartIcon,
+    RestartAlt as RestartIcon,
+    Refresh as RefreshIcon,
     DragIndicator as DragIcon,
 } from '@mui/icons-material';
 import type { ClaudeDesktopInfo, MCPServerInfo } from '../../shared/types';
@@ -59,6 +60,11 @@ export const ClaudeDesktopManager: React.FC = () => {
     useEffect(() => {
         loadData();
     }, []);
+
+    const handleRefresh = async () => {
+        setLoading(true);
+        await loadData();
+    };
 
     const handleDisable = async (serverName: string) => {
         try {
@@ -200,16 +206,26 @@ export const ClaudeDesktopManager: React.FC = () => {
                 <Typography variant='h4' component='h1'>
                     {t('claudeDesktop.title')}
                 </Typography>
-                {info.claudeExecutable && (
+                <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button
-                        variant='contained'
-                        startIcon={<RestartIcon />}
-                        onClick={handleRestart}
+                        variant='outlined'
+                        startIcon={<RefreshIcon />}
+                        onClick={handleRefresh}
                         sx={{ textTransform: 'none' }}
                     >
-                        {t('claudeDesktop.restart')}
+                        {t('common.refresh')}
                     </Button>
-                )}
+                    {info.claudeExecutable && (
+                        <Button
+                            variant='contained'
+                            startIcon={<RestartIcon />}
+                            onClick={handleRestart}
+                            sx={{ textTransform: 'none' }}
+                        >
+                            {t('claudeDesktop.restart')}
+                        </Button>
+                    )}
+                </Box>
             </Box>
 
             <Paper sx={{ p: 2, mb: 3 }}>
