@@ -1,5 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type {
+    AssetKind,
+    AssetListReport,
+    AssetOpResult,
     ClaudeCodeEnvInfo,
     ClaudeDesktopInfo,
     ClaudeEnvironment,
@@ -39,6 +42,17 @@ const CLAUDE_CLEANUP_CHANNELS = {
     GET_OTHER_ENVIRONMENTS: 'claude-cleanup:get-other-environments',
     SCAN_OTHER: 'claude-cleanup:scan-other',
     DELETE_OTHER: 'claude-cleanup:delete-other',
+} as const;
+
+// preload はサンドボックス下のため定数 import 不可。以下のチャンネル文字列は
+// shared/constants.ts の ASSET_MANAGER_CHANNELS と一致させること。
+const ASSET_MANAGER_CHANNELS = {
+    GET_ENVIRONMENTS: 'asset-manager:get-environments',
+    LIST: 'asset-manager:list',
+    DOWNLOAD: 'asset-manager:download',
+    INSPECT_UPLOAD: 'asset-manager:inspect-upload',
+    UPLOAD: 'asset-manager:upload',
+    DELETE: 'asset-manager:delete',
 } as const;
 
 type MCPServers = { enabled: MCPServerInfo[]; disabled: MCPServerInfo[] };
@@ -103,6 +117,29 @@ const api = {
 
         deleteOther: (env: ClaudeEnvironment, selection: OtherCleanupSelection): Promise<OtherCleanupReport> =>
             ipcRenderer.invoke(CLAUDE_CLEANUP_CHANNELS.DELETE_OTHER, env, selection),
+    },
+    assetManager: {
+        getEnvironments: (): Promise<{ env: ClaudeEnvironment; label: string }[]> =>
+            ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.GET_ENVIRONMENTS),
+
+        list: (env: ClaudeEnvironment, kind: AssetKind): Promise<AssetListReport> =>
+            ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.LIST, env, kind),
+
+        download: (env: ClaudeEnvironment, kind: AssetKind, names: string[]): Promise<AssetOpResult> =>
+            ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.DOWNLOAD, env, kind, names),
+
+        inspectUpload: (env: ClaudeEnvironment, kind: AssetKind): Promise<AssetOpResult> =>
+            ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.INSPECT_UPLOAD, env, kind),
+
+        upload: (
+            env: ClaudeEnvironment,
+            kind: AssetKind,
+            zipPath: string,
+            overwrite: boolean
+        ): Promise<AssetOpResult> => ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.UPLOAD, env, kind, zipPath, overwrite),
+
+        deleteSelected: (env: ClaudeEnvironment, kind: AssetKind, relPaths: string[]): Promise<AssetOpResult> =>
+            ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.DELETE, env, kind, relPaths),
     },
     window: {
         minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize'),

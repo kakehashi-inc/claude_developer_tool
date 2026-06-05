@@ -7,6 +7,7 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { ClaudeDesktopManager } from './components/ClaudeDesktopManager';
 import { ClaudeCodeManager } from './components/ClaudeCodeManager';
+import { AssetManager } from './components/AssetManager';
 import { Cleanup } from './components/Cleanup';
 import { UpdateNotification } from './components/UpdateNotification';
 
@@ -57,6 +58,7 @@ export const App: React.FC = () => {
                         <Route path='/' element={<Dashboard />} />
                         <Route path='/claude-desktop' element={<ClaudeDesktopManager />} />
                         <Route path='/claude-code' element={<ClaudeCodeManager />} />
+                        <Route path='/asset-manager' element={<AssetManager />} />
                         <Route path='/cleanup' element={<Cleanup />} />
                     </Routes>
                 </Layout>

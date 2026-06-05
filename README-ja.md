@@ -1,25 +1,16 @@
 # Claude Developer Tool
 
-開発者向けのElectronベースGUIツールです。Claude Desktopの各種ユーティリティを提供します。
+Claude Desktop と Claude Code（CLI）の設定・データをまとめて管理できる、Electron ベースの GUI ツールです。
 
 [English](README.md) | 日本語
 
 ## 機能
 
-- **Claude Desktop MCP 管理**:
-  - 各OS（Windows/macOS/Linux）のClaude Desktop設定を自動検出
-  - MCPサーバーの有効化/無効化
-  - 有効なMCPサーバーのドラッグ＆ドロップによる並べ替え
-  - Claude Desktopの起動/再起動（Windows/macOSのみ）
-- **Claude Code MCP 管理**:
-  - Claude Code（CLI）のMCPサーバーの有効化/無効化/並べ替え
-  - WSL を利用している場合は、WSL 内の Claude Code も別セクションで管理
-- **Claude Code クリーンアップ**:
-  - 不要になった履歴・キャッシュ・一時データをファイル数・容量付きで一覧表示し、選択して削除
-  - ディスク容量の回収に加え、動作速度の改善や、過去の不要なメモリーによる不可解な挙動の解消に役立ちます
-  - プロジェクト単位の履歴は個別／一括のどちらでも削除可能
-  - 「その他のツール」セクションで、Claude Code と併用するツール（Serena 等）の整理も可能（存在するときのみ表示）
-- **i18n/テーマ**: 日本語/英語、ライト/ダークモード対応
+- **Claude Desktop の MCP サーバー管理**: MCP サーバーの有効化・無効化・並べ替えを GUI で行えます。Claude Desktop の起動・再起動にも対応します（Windows / macOS）。
+- **Claude Code の MCP サーバー管理**: Claude Code（CLI）の MCP サーバーを管理できます。WSL を利用している場合は WSL 内の Claude Code も対象になります。
+- **Claude Code の Agent・Skill 管理**: エージェントとスキルの一覧と概要を確認し、ZIP でまとめてダウンロード・取り込み（共有やバックアップ）や、不要なものの削除ができます。WSL を利用している場合は WSL 内も対象になります。
+- **Claude Code のクリーンアップ**: 不要になった履歴・キャッシュ・一時データを整理してディスク容量を回収し、動作の安定化に役立てられます。Claude Code と併用するツール（Serena 等）の整理にも対応します。
+- **多言語・テーマ**: 日本語／英語、ライト／ダークモードに対応します。
 
 ## 対応OS
 

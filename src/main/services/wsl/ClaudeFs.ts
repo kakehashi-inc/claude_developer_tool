@@ -93,6 +93,15 @@ export class ClaudeFs {
         return `${base}\\${rel}`;
     }
 
+    /**
+     * ZIP 圧縮・解凍など外部処理向けに実 OS パス（native 絶対パス / WSL UNC パス）を返す。
+     * WSL でコマンドモードへフォールバックする（UNC 到達不可）場合は null。
+     * その場合、呼び出し側は ZIP 操作不可として扱うこと。
+     */
+    async resolveRealPath(relPath: string): Promise<string | null> {
+        return this.resolveAbs(relPath);
+    }
+
     /** WSL コマンドモードで使う Linux 絶対パス */
     private async linuxPath(relPath: string): Promise<string> {
         const home = await this.detector.resolveHome(this.distro);
@@ -241,6 +250,38 @@ export class ClaudeFs {
             const buf = await this.detector.runInDistro(
                 this.distro,
                 `find ${this.shellQuote(lp)} -mindepth 1 -maxdepth 1 -type d -printf '%f\\n' 2>/dev/null || true`
+            );
+            return buf
+                .toString('utf8')
+                .split(/\r?\n/)
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+        } catch {
+            return [];
+        }
+    }
+
+    /** ディレクトリ内のファイル名一覧（サブディレクトリは除く）。 */
+    async listFiles(relPath: string): Promise<string[]> {
+        const abs = await this.resolveAbs(relPath);
+        if (abs !== null) {
+            if (!existsSync(abs)) {
+                return [];
+            }
+            try {
+                return readdirSync(abs, { withFileTypes: true })
+                    .filter(d => d.isFile())
+                    .map(d => d.name);
+            } catch {
+                return [];
+            }
+        }
+        // コマンドモード
+        try {
+            const lp = await this.linuxPath(relPath);
+            const buf = await this.detector.runInDistro(
+                this.distro,
+                `find ${this.shellQuote(lp)} -mindepth 1 -maxdepth 1 -type f -printf '%f\\n' 2>/dev/null || true`
             );
             return buf
                 .toString('utf8')

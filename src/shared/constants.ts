@@ -104,6 +104,16 @@ export const OTHER_CLEANUP_ITEMS: OtherCleanupItem[] = [
     },
 ];
 
+// Claude Code Agent・Skill 管理用 IPC チャンネル
+export const ASSET_MANAGER_CHANNELS = {
+    GET_ENVIRONMENTS: 'asset-manager:get-environments',
+    LIST: 'asset-manager:list',
+    DOWNLOAD: 'asset-manager:download',
+    INSPECT_UPLOAD: 'asset-manager:inspect-upload',
+    UPLOAD: 'asset-manager:upload',
+    DELETE: 'asset-manager:delete',
+} as const;
+
 // 自動アップデート用 IPC チャンネル
 export const UPDATER_CHANNELS = {
     CHECK: 'updater:check',

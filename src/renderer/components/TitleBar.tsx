@@ -19,6 +19,7 @@ import {
     Dashboard as DashboardIcon,
     Storage as StorageIcon,
     Terminal as TerminalIcon,
+    Inventory2 as AssetIcon,
     CleaningServices as CleanupIcon,
     PowerSettingsNew as ExitIcon,
     Brightness4 as DarkIcon,
@@ -34,6 +35,7 @@ const SCREENS: { path: string; titleKey: string; navKey: string; Icon: typeof St
     { path: '/', titleKey: 'dashboard.title', navKey: 'nav.dashboard', Icon: DashboardIcon },
     { path: '/claude-desktop', titleKey: 'claudeDesktop.title', navKey: 'nav.claudeDesktop', Icon: StorageIcon },
     { path: '/claude-code', titleKey: 'claudeCode.title', navKey: 'nav.claudeCode', Icon: TerminalIcon },
+    { path: '/asset-manager', titleKey: 'assetManager.title', navKey: 'nav.assetManager', Icon: AssetIcon },
     { path: '/cleanup', titleKey: 'cleanup.title', navKey: 'nav.cleanup', Icon: CleanupIcon },
 ];
 
@@ -144,7 +146,7 @@ export const TitleBar: React.FC = () => {
 
             {/* 右側：ツールメニュー */}
             <Box sx={{ display: 'flex', alignItems: 'center', WebkitAppRegion: 'no-drag' }}>
-                {/* 画面切替アイコン（4 機能。アクティブを強調しワンクリック切替） */}
+                {/* 画面切替アイコン（5 機能。アクティブを強調しワンクリック切替） */}
                 {SCREENS.map(screen => {
                     const active = location.pathname === screen.path;
                     return (

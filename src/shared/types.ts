@@ -125,6 +125,46 @@ export interface OtherCleanupReport {
 // 「その他」削除の選択内容（項目キーの配列）
 export type OtherCleanupSelection = string[];
 
+// Agent・Skill 管理: 対象種別（~/.claude/agents・~/.claude/skills）
+export type AssetKind = 'agents' | 'skills';
+
+// agents/ skills/ 配下の 1 件（= 各エージェント / 各スキル）
+// - skills: <skill>/ ディレクトリ（frontmatter は <skill>/SKILL.md から読む）
+// - agents: agents/ 直下の .md ファイル、およびサブディレクトリ配下の .md ファイル（再帰）
+export interface AssetEntry {
+    name: string; // 表示名（skills=ディレクトリ名 / agents=.md のファイル名から拡張子を除いたもの）
+    relPath: string; // asset 親（.claude/<kind>）からの相対パス（DL/UL の単位。例 'apple-design' / 'foo.md' / 'sub/bar.md'）
+    isFile: boolean; // true=単一 .md ファイル（agents） / false=ディレクトリ（skills）
+    // 再帰ファイル数。skills でのみ取得・表示する（agents は 1 ファイル固定のため取得しない）。
+    fileCount?: number;
+    // frontmatter（先頭の --- で囲まれたヘッダー部）。無い場合は fields 空・raw は null。
+    frontmatter: Record<string, string>;
+    frontmatterRaw: string | null;
+}
+
+// Agent・Skill 管理の一覧レポート（環境 × 種別）
+export interface AssetListReport {
+    env: ClaudeEnvironment;
+    label: string;
+    kind: AssetKind;
+    // 実 OS パス（native 絶対パス / WSL UNC パス）に到達でき、ZIP 操作が可能か。
+    // false の場合（WSL コマンドモードで UNC 不可など）は DL/UL を行わない。
+    available: boolean;
+    entries: AssetEntry[];
+}
+
+// Agent・Skill 管理の操作結果（ダウンロード / アップロード / アップロード前検査）
+export interface AssetOpResult {
+    ok: boolean;
+    canceled?: boolean; // ダイアログをキャンセルした
+    message?: string; // エラー詳細（任意）
+    conflicts?: string[]; // アップロード前検査で検出した同名サブディレクトリ
+    zipPath?: string; // アップロード前検査で選択された ZIP の実パス
+    importedCount?: number; // アップロードで展開したサブディレクトリ数
+    deletedCount?: number; // 削除に成功した件数
+    skipped?: string[]; // 使用中などで削除できなかった対象（relPath）
+}
+
 export type UpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
 
 export interface UpdateState {

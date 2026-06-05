@@ -3,11 +3,13 @@ import { join } from 'path';
 import { ClaudeDesktopManager } from './services/ClaudeDesktopManager';
 import { ClaudeCodeManager } from './services/ClaudeCodeManager';
 import { ClaudeCleanupManager } from './services/ClaudeCleanupManager';
+import { AssetManager } from './services/AssetManager';
 import { WslDetector } from './services/wsl/WslDetector';
 import { UpdaterService } from './services/UpdaterService';
 import { registerClaudeDesktopHandlers } from './ipc/claudeDesktopHandlers';
 import { registerClaudeCodeHandlers } from './ipc/claudeCodeHandlers';
 import { registerClaudeCleanupHandlers } from './ipc/claudeCleanupHandlers';
+import { registerAssetManagerHandlers } from './ipc/assetManagerHandlers';
 import { registerWindowHandlers } from './ipc/windowHandlers';
 import { registerSystemHandlers } from './ipc/systemHandlers';
 import { registerUpdaterHandlers } from './ipc/updaterHandlers';
@@ -16,6 +18,7 @@ let mainWindow: BrowserWindow | null = null;
 let claudeDesktopManager: ClaudeDesktopManager;
 let claudeCodeManager: ClaudeCodeManager;
 let claudeCleanupManager: ClaudeCleanupManager;
+let assetManager: AssetManager;
 let updaterService: UpdaterService;
 
 const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
@@ -87,6 +90,7 @@ if (!gotTheLock) {
         const wslDetector = new WslDetector();
         claudeCodeManager = new ClaudeCodeManager(wslDetector);
         claudeCleanupManager = new ClaudeCleanupManager(wslDetector);
+        assetManager = new AssetManager(wslDetector);
 
         // 自動アップデートサービスを初期化
         updaterService = new UpdaterService();
@@ -96,6 +100,7 @@ if (!gotTheLock) {
         registerClaudeDesktopHandlers(claudeDesktopManager);
         registerClaudeCodeHandlers(claudeCodeManager);
         registerClaudeCleanupHandlers(claudeCleanupManager);
+        registerAssetManagerHandlers(assetManager, () => mainWindow);
         registerWindowHandlers();
         registerSystemHandlers();
         registerUpdaterHandlers(updaterService);

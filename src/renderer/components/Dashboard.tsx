@@ -4,6 +4,7 @@ import { Box, Typography, Card, CardActionArea, CardContent } from '@mui/materia
 import {
     Storage as StorageIcon,
     Terminal as TerminalIcon,
+    Inventory2 as AssetIcon,
     CleaningServices as CleanupIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +33,13 @@ const FEATURES: FeatureCard[] = [
         color: '#8a6df0',
     },
     {
+        path: '/asset-manager',
+        titleKey: 'nav.assetManager',
+        descKey: 'dashboard.assetManagerDesc',
+        Icon: AssetIcon,
+        color: '#d98a3a',
+    },
+    {
         path: '/cleanup',
         titleKey: 'nav.cleanup',
         descKey: 'dashboard.cleanupDesc',
@@ -41,7 +49,7 @@ const FEATURES: FeatureCard[] = [
 ];
 
 /**
- * 起動時に表示されるダッシュボード。3 機能をカードで選択する。
+ * 起動時に表示されるダッシュボード。各機能をカードで選択する。
  */
 export const Dashboard: React.FC = () => {
     const { t } = useTranslation();

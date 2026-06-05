@@ -1,25 +1,16 @@
 # Claude Developer Tool
 
-An Electron-based GUI tool for developers, providing various utilities for Claude Desktop.
+An Electron-based GUI tool for managing the configuration and data of Claude Desktop and Claude Code (CLI) in one place.
 
 English | [日本語](README-ja.md)
 
 ## Features
 
-- **Claude Desktop MCP Manager**:
-  - Auto-detect Claude Desktop configuration for each OS (Windows/macOS/Linux)
-  - Enable/disable MCP servers
-  - Drag & drop reordering of enabled MCP servers
-  - Start/restart Claude Desktop (Windows/macOS only)
-- **Claude Code MCP Manager**:
-  - Enable/disable/reorder Claude Code (CLI) MCP servers
-  - When you use WSL, also manage Claude Code inside WSL in a separate section
-- **Claude Code Cleanup**:
-  - List unneeded history, cache, and temporary data with their file counts and sizes and delete the selected ones
-  - Besides reclaiming disk space, this can improve performance and clear stale memory that causes unexpected behavior
-  - Per-project history can be cleaned individually or all at once
-  - An "Other tools" section can also tidy up tools used alongside Claude Code (e.g. Serena), shown only when they are present
-- **i18n/theme**: Japanese/English, light/dark modes
+- **Claude Desktop MCP server management**: Enable, disable, and reorder MCP servers from the GUI, and start or restart Claude Desktop (Windows / macOS).
+- **Claude Code MCP server management**: Manage MCP servers for Claude Code (CLI). When you use WSL, Claude Code inside WSL is covered too.
+- **Claude Code agent / skill management**: Review your agents and skills with a summary of each, download or import them together as ZIP archives (for sharing or backup), and delete the ones you no longer need. When you use WSL, agents and skills inside WSL are covered too.
+- **Claude Code cleanup**: Tidy up unneeded history, cache, and temporary data to reclaim disk space and keep things running smoothly, including tools used alongside Claude Code (e.g. Serena).
+- **Localization & theme**: Japanese / English, light / dark modes.
 
 ## Supported OS
 
