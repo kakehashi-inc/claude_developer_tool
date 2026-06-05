@@ -1,6 +1,6 @@
 {
   "name": "claude-developer-tool",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Claude Developer Tool GUI",
   "main": "dist/main/index.js",
   "engines": {

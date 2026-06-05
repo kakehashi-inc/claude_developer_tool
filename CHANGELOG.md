@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.4.0] - 2026-06-05
+
 ### Added
 
 - **Claude Code Agent / Skill Manager**: a new screen (placed just before Cleanup) to manage Claude Code agents and skills for both the host and WSL. Each agent and skill is listed with a summary (such as name and description), and a "View" action shows the full header details. Selected agents or skills can be downloaded together as a ZIP, a ZIP can be uploaded to import them, and selected items can be deleted. Agents and skills are separated by tabs, and WSL environments appear in their own sections. When importing items that already exist, a confirmation is shown before they are replaced.
