@@ -4,7 +4,7 @@ import { Box, Typography, Card, CardActionArea, CardContent } from '@mui/materia
 import {
     Storage as StorageIcon,
     Terminal as TerminalIcon,
-    Inventory2 as AssetIcon,
+    SmartToy as AssetIcon,
     CleaningServices as CleanupIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';

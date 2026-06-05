@@ -19,7 +19,7 @@ import {
     Dashboard as DashboardIcon,
     Storage as StorageIcon,
     Terminal as TerminalIcon,
-    Inventory2 as AssetIcon,
+    SmartToy as AssetIcon,
     CleaningServices as CleanupIcon,
     PowerSettingsNew as ExitIcon,
     Brightness4 as DarkIcon,
