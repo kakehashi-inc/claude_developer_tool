@@ -137,6 +137,17 @@ export default {
         overwriteConfirmTitle: 'Overwrite existing items?',
         overwriteConfirmBody:
             'The following {{count}} item(s) already exist and will be deleted and replaced: {{names}}. Continue?',
+        importOfficial: 'Import Official Skills',
+        importOfficialTitle: 'Import Official Skills',
+        importOfficialDesc:
+            'These are skills from the official Anthropic repository (anthropics/skills). Select the skills to import. Existing skills with the same name will be replaced.',
+        import: 'Import',
+        gitRequired: 'This feature requires git to be installed',
+        officialImportSuccess: 'Imported {{count}} official skill(s)',
+        officialImportError: 'Failed to import official skills',
+        officialListError: 'Failed to fetch official skills',
+        repoUpdating: 'Updating the official repository...',
+        mdNoName: 'Could not read the name from SKILL.md',
     },
     nav: {
         dashboard: 'Dashboard',

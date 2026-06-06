@@ -132,6 +132,17 @@ export default {
         overwriteConfirmTitle: '同名の項目を上書きしますか？',
         overwriteConfirmBody:
             '次の {{count}} 件は既に存在します。ディレクトリごと削除して置き換えます: {{names}}。続行しますか？',
+        importOfficial: '公式スキルインポート',
+        importOfficialTitle: '公式スキルをインポート',
+        importOfficialDesc:
+            'Anthropic 公式リポジトリ（anthropics/skills）のスキルです。取り込むスキルを選択してください。同名の既存スキルは置き換えられます。',
+        import: 'インポート',
+        gitRequired: 'この機能には git のインストールが必要です',
+        officialImportSuccess: '{{count}} 件の公式スキルをインポートしました',
+        officialImportError: '公式スキルのインポートに失敗しました',
+        officialListError: '公式スキルの取得に失敗しました',
+        repoUpdating: '公式リポジトリを更新しています…',
+        mdNoName: 'SKILL.md の name が取得できませんでした',
     },
     nav: {
         dashboard: 'ダッシュボード',

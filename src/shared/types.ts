@@ -153,7 +153,7 @@ export interface AssetListReport {
     entries: AssetEntry[];
 }
 
-// Agent・Skill 管理の操作結果（ダウンロード / アップロード / アップロード前検査）
+// Agent・Skill 管理の操作結果（ダウンロード / アップロード / アップロード前検査 / 公式スキル一覧）
 export interface AssetOpResult {
     ok: boolean;
     canceled?: boolean; // ダイアログをキャンセルした
@@ -163,6 +163,14 @@ export interface AssetOpResult {
     importedCount?: number; // アップロードで展開したサブディレクトリ数
     deletedCount?: number; // 削除に成功した件数
     skipped?: string[]; // 使用中などで削除できなかった対象（relPath）
+    // アップロード前検査で選択されたファイル種別（zip / md）。renderer が確定 IPC を呼び分ける。
+    uploadKind?: 'zip' | 'md';
+    // md アップロード時の元ファイル実パス（zipPath と役割分担）。
+    srcPath?: string;
+    // md アップロード時に算出した取り込み先ディレクトリ名（skills）／ファイル名（agents）。表示・衝突確認用。
+    targetName?: string;
+    // 公式スキル一覧返却用（list-official-skills）。既存スキル一覧と同形の AssetEntry。
+    entries?: AssetEntry[];
 }
 
 export type UpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';

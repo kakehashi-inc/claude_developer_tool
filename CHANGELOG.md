@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.4.2] - 2026-06-07
+
+### Added
+
+- **Import official skills**: the Skills tab now has an "Import Official Skills" button that lets you browse and install skills from the official Anthropic skills collection. Pick the skills you want from the list and import them in one step. The catalog is downloaded the first time and refreshed automatically afterward, so you always see the latest skills. The button is available when Git is installed, and works for both the host and WSL. Skills you already have are updated to the official version.
+- **Upload a single Markdown file**: in addition to ZIP archives, you can now upload an individual `.md` file. On the Skills tab it is turned into a skill automatically; on the Agents tab it is added as an agent. As before, you are asked to confirm before anything with the same name is replaced.
+
 ## [v0.4.1] - 2026-06-05
 
 ### Fixed

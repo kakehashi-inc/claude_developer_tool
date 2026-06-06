@@ -52,7 +52,11 @@ const ASSET_MANAGER_CHANNELS = {
     DOWNLOAD: 'asset-manager:download',
     INSPECT_UPLOAD: 'asset-manager:inspect-upload',
     UPLOAD: 'asset-manager:upload',
+    UPLOAD_MD: 'asset-manager:upload-md',
     DELETE: 'asset-manager:delete',
+    IS_GIT_AVAILABLE: 'asset-manager:is-git-available',
+    LIST_OFFICIAL_SKILLS: 'asset-manager:list-official-skills',
+    IMPORT_OFFICIAL_SKILLS: 'asset-manager:import-official-skills',
 } as const;
 
 type MCPServers = { enabled: MCPServerInfo[]; disabled: MCPServerInfo[] };
@@ -138,8 +142,23 @@ const api = {
             overwrite: boolean
         ): Promise<AssetOpResult> => ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.UPLOAD, env, kind, zipPath, overwrite),
 
+        uploadMd: (
+            env: ClaudeEnvironment,
+            kind: AssetKind,
+            mdPath: string,
+            overwrite: boolean
+        ): Promise<AssetOpResult> => ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.UPLOAD_MD, env, kind, mdPath, overwrite),
+
         deleteSelected: (env: ClaudeEnvironment, kind: AssetKind, relPaths: string[]): Promise<AssetOpResult> =>
             ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.DELETE, env, kind, relPaths),
+
+        isGitAvailable: (): Promise<boolean> => ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.IS_GIT_AVAILABLE),
+
+        listOfficialSkills: (): Promise<AssetOpResult> =>
+            ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.LIST_OFFICIAL_SKILLS),
+
+        importOfficialSkills: (env: ClaudeEnvironment, relPaths: string[]): Promise<AssetOpResult> =>
+            ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.IMPORT_OFFICIAL_SKILLS, env, relPaths),
     },
     window: {
         minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize'),

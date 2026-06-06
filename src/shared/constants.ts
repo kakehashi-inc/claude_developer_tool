@@ -111,8 +111,21 @@ export const ASSET_MANAGER_CHANNELS = {
     DOWNLOAD: 'asset-manager:download',
     INSPECT_UPLOAD: 'asset-manager:inspect-upload',
     UPLOAD: 'asset-manager:upload',
+    UPLOAD_MD: 'asset-manager:upload-md',
     DELETE: 'asset-manager:delete',
+    IS_GIT_AVAILABLE: 'asset-manager:is-git-available',
+    LIST_OFFICIAL_SKILLS: 'asset-manager:list-official-skills',
+    IMPORT_OFFICIAL_SKILLS: 'asset-manager:import-official-skills',
 } as const;
+
+// 公式スキルリポジトリ（Anthropic 公式 skills）。clone/pull のソースとして使用する。
+export const OFFICIAL_SKILLS_REPO_URL = 'https://github.com/anthropics/skills.git';
+// 公式リポジトリの既定ブランチ。
+export const OFFICIAL_SKILLS_REPO_BRANCH = 'main';
+// リポジトリ内のスキル格納ディレクトリ（リポジトリルートからの相対）。
+export const OFFICIAL_SKILLS_REPO_SUBDIR = 'skills';
+// clone 先ディレクトリ名（app.getPath('userData')/repos/<dir>）。
+export const OFFICIAL_SKILLS_REPO_DIRNAME = 'anthropics-skills';
 
 // 自動アップデート用 IPC チャンネル
 export const UPDATER_CHANNELS = {

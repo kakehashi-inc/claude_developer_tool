@@ -37,8 +37,31 @@ export function registerAssetManagerHandlers(manager: AssetManager, getMainWindo
         }
     );
 
+    // md 単体を取り込む（skills は SKILL.md 化、agents は .md をそのまま配置）
+    ipcMain.handle(
+        ASSET_MANAGER_CHANNELS.UPLOAD_MD,
+        (_, env: ClaudeEnvironment, kind: AssetKind, mdPath: string, overwrite: boolean) => {
+            return manager.uploadMd(env, kind, mdPath, overwrite);
+        }
+    );
+
     // 選択したエージェント / スキルを削除
     ipcMain.handle(ASSET_MANAGER_CHANNELS.DELETE, (_, env: ClaudeEnvironment, kind: AssetKind, relPaths: string[]) => {
         return manager.deleteSelected(env, kind, relPaths);
+    });
+
+    // git が利用可能か（公式スキルインポートボタンの活性判定）
+    ipcMain.handle(ASSET_MANAGER_CHANNELS.IS_GIT_AVAILABLE, () => {
+        return manager.isGitAvailable();
+    });
+
+    // 公式スキルリポジトリを clone/更新し、スキル一覧を返す
+    ipcMain.handle(ASSET_MANAGER_CHANNELS.LIST_OFFICIAL_SKILLS, () => {
+        return manager.listOfficialSkills();
+    });
+
+    // 選択した公式スキルを対象環境へ取り込む（公式同士は確認なしで置換）
+    ipcMain.handle(ASSET_MANAGER_CHANNELS.IMPORT_OFFICIAL_SKILLS, (_, env: ClaudeEnvironment, relPaths: string[]) => {
+        return manager.importOfficialSkills(env, relPaths);
     });
 }
