@@ -144,6 +144,23 @@ export default {
         officialListError: '公式スキルの取得に失敗しました',
         repoUpdating: '公式リポジトリを更新しています…',
         mdNoName: 'SKILL.md の name が取得できませんでした',
+        kindWarnTitle: '種別が一致しない可能性があります',
+        kindWarnContinue: 'このまま取り込む',
+        kindWarn: {
+            'agent-md-into-skill':
+                'このファイルはエージェント（tools / model を持つ）の可能性があります。スキルとして取り込みますか？',
+            'skill-no-skillmd':
+                'このアーカイブは SKILL.md を含んでおらず、正しいスキルでない可能性があります。スキルとして取り込みますか？',
+            'skillmd-into-agent':
+                'このファイルは SKILL.md（スキル）の可能性があります。エージェントとして取り込みますか？',
+        },
+        kindBlock: {
+            'agent-into-skill':
+                'このアーカイブはエージェント（.md ファイル）のようです。スキルタブには取り込めません。エージェントタブを使用してください。',
+            'skill-into-agent':
+                'このアーカイブはスキル（SKILL.md を含むフォルダ）のようです。エージェントタブには取り込めません。スキルタブを使用してください。',
+            'no-md': 'このアーカイブには .md ファイルが含まれておらず、エージェントとして取り込めません。',
+        },
     },
     settings: {
         colItem: '項目',

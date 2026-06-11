@@ -149,6 +149,22 @@ export default {
         officialListError: 'Failed to fetch official skills',
         repoUpdating: 'Updating the official repository...',
         mdNoName: 'Could not read the name from SKILL.md',
+        kindWarnTitle: 'This may be the wrong type',
+        kindWarnContinue: 'Import anyway',
+        kindWarn: {
+            'agent-md-into-skill':
+                'This file looks like an agent (it has tools / model). Import it as a skill anyway?',
+            'skill-no-skillmd':
+                'This archive does not contain a SKILL.md and may not be a valid skill. Import it as a skill anyway?',
+            'skillmd-into-agent': 'This file looks like a SKILL.md (a skill). Import it as an agent anyway?',
+        },
+        kindBlock: {
+            'agent-into-skill':
+                'This archive looks like an agent (.md files). It cannot be imported on the Skills tab. Use the Agents tab.',
+            'skill-into-agent':
+                'This archive looks like a skill (a folder containing SKILL.md). It cannot be imported on the Agents tab. Use the Skills tab.',
+            'no-md': 'This archive contains no .md files and cannot be imported as an agent.',
+        },
     },
     settings: {
         colItem: 'Item',

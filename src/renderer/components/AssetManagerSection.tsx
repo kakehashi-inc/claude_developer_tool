@@ -78,6 +78,13 @@ export const AssetManagerSection: React.FC<Props> = ({ env, onNotify }) => {
         conflicts: string[];
         uploadKind: 'zip' | 'md';
     } | null>(null);
+    // 種別不一致の警告（続行 / キャンセル）。続行時は通常フロー（衝突確認 → アップロード）へ進む。
+    const [kindWarn, setKindWarn] = useState<{
+        srcPath: string;
+        conflicts: string[];
+        uploadKind: 'zip' | 'md';
+        reason: string;
+    } | null>(null);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [viewEntry, setViewEntry] = useState<AssetEntry | null>(null);
     // name 列の最大幅をウィンドウ幅の割合で算出するため、ウィンドウ幅を監視する。
@@ -199,12 +206,14 @@ export const AssetManagerSection: React.FC<Props> = ({ env, onNotify }) => {
             if (result.canceled) {
                 return;
             }
-            // md の name 未取得などの検査エラーは個別メッセージを優先する。
+            // 検査エラー。種別不一致のブロック（kind-block-*）は専用メッセージを出す。
             if (!result.ok) {
-                onNotify(
-                    t(result.message === 'md-no-name' ? 'assetManager.mdNoName' : 'assetManager.uploadError'),
-                    'error'
-                );
+                const msg = result.message ?? '';
+                if (msg.startsWith('kind-block-')) {
+                    onNotify(t(`assetManager.kindBlock.${msg.slice('kind-block-'.length)}`), 'error');
+                } else {
+                    onNotify(t(msg === 'md-no-name' ? 'assetManager.mdNoName' : 'assetManager.uploadError'), 'error');
+                }
                 return;
             }
             const uploadKind = result.uploadKind ?? 'zip';
@@ -214,12 +223,38 @@ export const AssetManagerSection: React.FC<Props> = ({ env, onNotify }) => {
                 return;
             }
             const conflicts = result.conflicts ?? [];
-            if (conflicts.length > 0) {
-                // 同名衝突あり → 確認ダイアログ
-                setConfirm({ srcPath, conflicts, uploadKind });
+            // 種別不一致の疑い → 続行/キャンセルの確認を先に挟む。
+            if (result.kindCheck === 'warn') {
+                setKindWarn({ srcPath, conflicts, uploadKind, reason: result.kindMessage ?? '' });
                 return;
             }
-            await runUpload(srcPath, uploadKind, false);
+            await proceedUpload(srcPath, uploadKind, conflicts);
+        } catch {
+            onNotify(t('assetManager.uploadError'), 'error');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    // 検査後の通常フロー: 衝突があれば上書き確認、無ければそのまま取り込む。
+    const proceedUpload = async (srcPath: string, uploadKind: 'zip' | 'md', conflicts: string[]) => {
+        if (conflicts.length > 0) {
+            setConfirm({ srcPath, conflicts, uploadKind });
+            return;
+        }
+        await runUpload(srcPath, uploadKind, false);
+    };
+
+    // 種別不一致の警告で「続行」 → 通常フローへ。
+    const handleConfirmKindWarn = async () => {
+        if (!kindWarn) {
+            return;
+        }
+        const { srcPath, uploadKind, conflicts } = kindWarn;
+        setKindWarn(null);
+        setBusy(true);
+        try {
+            await proceedUpload(srcPath, uploadKind, conflicts);
         } catch {
             onNotify(t('assetManager.uploadError'), 'error');
         } finally {
@@ -446,6 +481,22 @@ export const AssetManagerSection: React.FC<Props> = ({ env, onNotify }) => {
                     </>
                 )}
             </Box>
+
+            {/* 種別不一致の警告ダイアログ（続行 / キャンセル） */}
+            <Dialog open={kindWarn !== null} onClose={() => setKindWarn(null)}>
+                <DialogTitle>{t('assetManager.kindWarnTitle')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {kindWarn ? t(`assetManager.kindWarn.${kindWarn.reason}`) : ''}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setKindWarn(null)}>{t('assetManager.cancel')}</Button>
+                    <Button color='warning' variant='contained' onClick={handleConfirmKindWarn}>
+                        {t('assetManager.kindWarnContinue')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {/* 上書き確認ダイアログ（zip / md 共通） */}
             <Dialog open={confirm !== null} onClose={() => setConfirm(null)}>

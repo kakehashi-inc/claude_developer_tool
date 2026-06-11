@@ -171,6 +171,13 @@ export interface AssetOpResult {
     targetName?: string;
     // 公式スキル一覧返却用（list-official-skills）。既存スキル一覧と同形の AssetEntry。
     entries?: AssetEntry[];
+    // アップロード前検査の種別整合チェック結果。
+    // - 'warn': アップロード対象が現在のタブ（種別）と食い違う疑いがある（続行/キャンセルを確認）。
+    //   この場合も ok:true で srcPath/zipPath/conflicts は通常どおり返す。
+    // 'block' は ok:false ＋ message に理由コードを入れて返すため、ここでは扱わない。
+    kindCheck?: 'warn';
+    // kindCheck の理由コード（i18n キーの末尾。例 'agent-md-into-skill'）。
+    kindMessage?: string;
 }
 
 // ============================================================

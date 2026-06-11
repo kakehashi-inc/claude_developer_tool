@@ -298,8 +298,15 @@ export class AssetManager {
             return { ok: false, message: 'invalid-archive' };
         }
 
+        // 種別整合チェック（エージェント / スキルの誤アップロード防止）。
+        const cls = this.classifyZipKind(zip, kind);
+        if (cls.verdict === 'block') {
+            return { ok: false, message: `kind-block-${cls.reason}` };
+        }
+
         const conflicts = await this.computeConflicts(fs, parentRel, zip, kind);
-        return { ok: true, uploadKind: 'zip', zipPath: srcPath, conflicts };
+        const warn = cls.verdict === 'warn' ? { kindCheck: 'warn' as const, kindMessage: cls.reason } : {};
+        return { ok: true, uploadKind: 'zip', zipPath: srcPath, conflicts, ...warn };
     }
 
     /**
@@ -321,7 +328,14 @@ export class AssetManager {
         }
         const conflictRel = kind === 'skills' ? `${parentRel}/${target.name}` : `${parentRel}/${target.relPath}`;
         const conflicts = (await fs.exists(conflictRel)) ? [target.name] : [];
-        return { ok: true, uploadKind: 'md', srcPath: mdPath, targetName: target.name, conflicts };
+
+        // 種別整合チェック（md は誤りでもブロックせず警告のみ）。
+        const cls = this.classifyMdKind(mdPath);
+        const verdict = kind === 'skills' ? cls.skills : cls.agents;
+        const reason = kind === 'skills' ? cls.reasonSkills : 'skillmd-into-agent';
+        const warn = verdict === 'warn' ? { kindCheck: 'warn' as const, kindMessage: reason } : {};
+
+        return { ok: true, uploadKind: 'md', srcPath: mdPath, targetName: target.name, conflicts, ...warn };
     }
 
     /**
@@ -804,5 +818,100 @@ export class AssetManager {
             files.push(entry.entryName.replace(/\\/g, '/'));
         }
         return files;
+    }
+
+    // ============================================================
+    // 種別整合チェック（エージェント / スキルの誤アップロード防止）
+    // ============================================================
+
+    /**
+     * ZIP の構造的な特徴を抽出する。
+     * - hasSkillDir:  トップレベルディレクトリ配下に SKILL.md（大小無視）を持つものがある（= スキル構造）。
+     * - hasTopLevelMd: トップレベル（ディレクトリ配下でない）に .md ファイルが直置きされている（= エージェント構造）。
+     * - hasAnyMd:     どこかに .md ファイルがある。
+     */
+    private detectZipStructure(zip: AdmZip): {
+        hasSkillDir: boolean;
+        hasTopLevelMd: boolean;
+        hasAnyMd: boolean;
+    } {
+        let hasSkillDir = false;
+        let hasTopLevelMd = false;
+        let hasAnyMd = false;
+        for (const file of this.zipFileEntries(zip)) {
+            const segments = file.split('/').filter(s => s.length > 0);
+            if (segments.length === 0) {
+                continue;
+            }
+            const base = segments[segments.length - 1];
+            const isMd = base.toLowerCase().endsWith('.md');
+            if (isMd) {
+                hasAnyMd = true;
+            }
+            // トップレベル直置きの .md（サブディレクトリに属さない）
+            if (isMd && segments.length === 1) {
+                hasTopLevelMd = true;
+            }
+            // <topdir>/SKILL.md（大小無視）。深さは問わずトップレベルディレクトリ直下を見る。
+            if (segments.length === 2 && base.toLowerCase() === 'skill.md') {
+                hasSkillDir = true;
+            }
+        }
+        return { hasSkillDir, hasTopLevelMd, hasAnyMd };
+    }
+
+    /**
+     * ZIP の構造と取り込み先の種別（kind）の整合を判定する。
+     * 戻り値:
+     * - { verdict: 'ok' }          問題なし（無音で取り込み）。
+     * - { verdict: 'block', reason } 明白な誤り（取り込み不可）。
+     * - { verdict: 'warn', reason }  疑いあり（続行/キャンセルを確認）。
+     */
+    private classifyZipKind(zip: AdmZip, kind: AssetKind): { verdict: 'ok' | 'block' | 'warn'; reason?: string } {
+        const s = this.detectZipStructure(zip);
+        if (kind === 'skills') {
+            // スキルに必須の SKILL.md ディレクトリが無く、エージェント構造（.md 直置き）→ ブロック
+            if (!s.hasSkillDir && s.hasTopLevelMd) {
+                return { verdict: 'block', reason: 'agent-into-skill' };
+            }
+            // SKILL.md ディレクトリがある → 正当なスキル
+            if (s.hasSkillDir) {
+                return { verdict: 'ok' };
+            }
+            // ディレクトリ構成だが SKILL.md が無い（他構成）→ 注意
+            return { verdict: 'warn', reason: 'skill-no-skillmd' };
+        }
+        // agents
+        // スキルの確定構造（SKILL.md ディレクトリ）→ ブロック
+        if (s.hasSkillDir) {
+            return { verdict: 'block', reason: 'skill-into-agent' };
+        }
+        // .md を 1 つも含まない → エージェントとして取り込む意味がない → ブロック
+        if (!s.hasAnyMd) {
+            return { verdict: 'block', reason: 'no-md' };
+        }
+        return { verdict: 'ok' };
+    }
+
+    /**
+     * 単一 md の内容・ファイル名と取り込み先の種別（kind）の整合を判定する。
+     * - skills へ: SKILL.md なら OK。frontmatter に tools/model（エージェント特有）があれば warn。
+     * - agents へ: ファイル名が SKILL.md（スキル由来の疑い）なら warn。それ以外は OK。
+     */
+    private classifyMdKind(mdPath: string): { skills: 'ok' | 'warn'; agents: 'ok' | 'warn'; reasonSkills?: string } {
+        const fileName = basename(mdPath);
+        const isSkillMd = fileName.toLowerCase() === 'skill.md';
+        let hasAgentKeys = false;
+        try {
+            const fm = parseFrontmatter(readFileSync(mdPath, 'utf-8'));
+            hasAgentKeys = !!(fm?.fields?.tools !== undefined || fm?.fields?.model !== undefined);
+        } catch {
+            hasAgentKeys = false;
+        }
+        // skills 側: SKILL.md は OK。エージェント特有キーがあれば warn。
+        const skills: 'ok' | 'warn' = !isSkillMd && hasAgentKeys ? 'warn' : 'ok';
+        // agents 側: SKILL.md という名前はスキル由来の疑い → warn。
+        const agents: 'ok' | 'warn' = isSkillMd ? 'warn' : 'ok';
+        return { skills, agents, reasonSkills: skills === 'warn' ? 'agent-md-into-skill' : undefined };
     }
 }
