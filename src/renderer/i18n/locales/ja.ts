@@ -102,6 +102,7 @@ export default {
         wslSection: 'WSL: {{distro}}',
         tabAgents: 'エージェント',
         tabSkills: 'スキル',
+        tabSettings: '設定',
         col: {
             name: '名前',
             description: '説明',
@@ -143,6 +144,112 @@ export default {
         officialListError: '公式スキルの取得に失敗しました',
         repoUpdating: '公式リポジトリを更新しています…',
         mdNoName: 'SKILL.md の name が取得できませんでした',
+    },
+    settings: {
+        colItem: '項目',
+        colValue: '値',
+        directEdit: '直接編集',
+        directEditTitle: 'settings.json を直接編集',
+        directEditDesc:
+            'settings.json の内容をそのまま編集します。保存するとファイル全体がこの内容で上書きされます。JSON として正しい内容にしてください。',
+        save: '保存',
+        cancel: 'キャンセル',
+        unset: '未設定',
+        unsetWithDefault: '未設定（既定: {{default}}）',
+        enabled: '有効',
+        disabled: '無効',
+        saveSuccess: '設定を保存しました',
+        saveError: '設定の保存に失敗しました',
+        readError: '設定の読み込みに失敗しました',
+        invalidJson: 'JSON の構文が正しくありません',
+        invalidExisting: '既存の settings.json が壊れているため保存できません。直接編集で修正してください。',
+        unavailable: 'この環境の設定にはアクセスできません。',
+        group: {
+            model: 'モデル・思考',
+            display: '表示・通知',
+            behavior: '動作・データ',
+            agent: 'エージェント',
+        },
+        field: {
+            model: {
+                label: 'モデル（model）',
+                desc: '既定で使用するモデル。未設定でアプリ既定。',
+            },
+            language: {
+                label: '応答言語（language）',
+                desc: '応答や音声入力の優先言語。任意の言語名を入力できます（例: japanese, english, spanish）。空欄で未設定。',
+                placeholder: '例: japanese',
+            },
+            outputStyle: {
+                label: '出力スタイル（outputStyle）',
+                desc: '応答の出力スタイル。組み込み（default / Explanatory / Learning）のほかカスタムも指定可。空欄で未設定。',
+                placeholder: '例: Explanatory',
+            },
+            effortLevel: {
+                label: '思考の労力（effortLevel）',
+                desc: '思考にかける労力。高いほど品質が上がりコストも増えます。',
+            },
+            advisorModel: {
+                label: 'アドバイザーモデル（advisorModel）',
+                desc: 'アドバイザーツールが使用するモデル。',
+            },
+            alwaysThinkingEnabled: {
+                label: '常に拡張思考（alwaysThinkingEnabled）',
+                desc: 'すべてのセッションで拡張思考を既定で有効にします。',
+            },
+            autoMemoryEnabled: {
+                label: '自動メモリ（autoMemoryEnabled）',
+                desc: '自動メモリの読み書きを有効にします。',
+            },
+            editorMode: {
+                label: '入力モード（editorMode）',
+                desc: '入力欄のキーバインド。',
+            },
+            preferredNotifChannel: {
+                label: '通知方法（preferredNotifChannel）',
+                desc: '通知の届け方。',
+            },
+            spinnerTipsEnabled: {
+                label: 'スピナーTips（spinnerTipsEnabled）',
+                desc: '処理中のスピナーに Tips を表示します。',
+            },
+            showTurnDuration: {
+                label: 'ターン時間表示（showTurnDuration）',
+                desc: '応答後に処理時間を表示します。',
+            },
+            autoScrollEnabled: {
+                label: '自動スクロール（autoScrollEnabled）',
+                desc: '全画面表示で新しい出力に追従します。',
+            },
+            awaySummaryEnabled: {
+                label: '離席要約（awaySummaryEnabled）',
+                desc: '少し離席して戻ったときに要約を表示します。',
+            },
+            includeCoAuthoredBy: {
+                label: 'Co-authored-by 付与（includeCoAuthoredBy）',
+                desc: 'コミット/PR に Claude の Co-authored-by 行を含めます。',
+            },
+            autoUpdatesChannel: {
+                label: '更新チャンネル（autoUpdatesChannel）',
+                desc: '自動更新のチャンネル。stable は約1週間遅れで安定、latest は最新。',
+            },
+            cleanupPeriodDays: {
+                label: 'セッション保持日数（cleanupPeriodDays）',
+                desc: 'この日数より古いセッションファイルを削除します（最小 1、未設定で既定 30）。',
+            },
+            agentTeams: {
+                label: 'エージェントチーム（CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS）',
+                desc: '実験的なエージェントチーム機能を有効にします。ONで env に "1" を設定、OFFで設定を削除します。',
+            },
+            teammateMode: {
+                label: 'チームメイトモード（teammateMode）',
+                desc: 'エージェントチームの実行モード。',
+            },
+            agentPushNotifEnabled: {
+                label: 'エージェント通知（agentPushNotifEnabled）',
+                desc: 'エージェントのプッシュ通知を有効にします。',
+            },
+        },
     },
     nav: {
         dashboard: 'ダッシュボード',

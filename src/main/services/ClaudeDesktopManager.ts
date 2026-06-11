@@ -244,7 +244,7 @@ export class ClaudeDesktopManager {
             } else {
                 await execAsync('pkill -x -i "claude"');
             }
-        } catch (error) {
+        } catch {
             // プロセスが既に存在しない場合などは無視
         }
 

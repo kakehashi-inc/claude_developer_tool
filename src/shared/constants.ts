@@ -1,6 +1,6 @@
 import { homedir } from 'os';
 import { join } from 'path';
-import { OSType, OtherCleanupItem } from './types';
+import { OSType, OtherCleanupItem, SettingsFieldSpec } from './types';
 
 // Claude Desktopの設定ファイルパス
 const getClaudeConfigPath = (platform: OSType): string => {
@@ -117,6 +117,72 @@ export const ASSET_MANAGER_CHANNELS = {
     LIST_OFFICIAL_SKILLS: 'asset-manager:list-official-skills',
     IMPORT_OFFICIAL_SKILLS: 'asset-manager:import-official-skills',
 } as const;
+
+// Claude Code 設定ファイル（~/.claude/settings.json）。CLAUDE_DIR 配下。
+export const CLAUDE_CODE_SETTINGS_FILENAME = 'settings.json';
+
+// 設定（settings.json）管理用 IPC チャンネル
+export const SETTINGS_CHANNELS = {
+    GET_ENVIRONMENTS: 'settings:get-environments',
+    READ: 'settings:read',
+    WRITE: 'settings:write',
+    WRITE_RAW: 'settings:write-raw',
+} as const;
+
+// settings.json の編集対象項目（registry）。
+// ここに 1 項目追加すると、読み取り・テーブル編集・保存まで反映される。
+// 関係ない項目（permissions / enabledPlugins など）には一切触れない。
+// settings.json の編集対象項目（registry）。
+// group ごとにまとめて宣言する。SETTINGS_GROUP_ORDER の順で UI に見出し付きで表示される。
+// defaultOn は未設定時に Claude Code が採用する既定値（公式ドキュメント準拠）。
+export const SETTINGS_FIELDS: SettingsFieldSpec[] = [
+    // === モデル・思考 ===
+    { key: 'model', path: 'model', group: 'model', type: 'string', choices: ['opus', 'sonnet', 'haiku', 'fable'] },
+    { key: 'advisorModel', path: 'advisorModel', group: 'model', type: 'string', choices: ['opus', 'sonnet', 'fable'] },
+    { key: 'effortLevel', path: 'effortLevel', group: 'model', type: 'string', choices: ['low', 'medium', 'high', 'xhigh'] },
+    { key: 'alwaysThinkingEnabled', path: 'alwaysThinkingEnabled', group: 'model', type: 'boolean', defaultOn: false },
+    // language は任意の言語名を受け付ける自由文字列（japanese / english / spanish ...）。choices で限定しない。
+    { key: 'language', path: 'language', group: 'model', type: 'string' },
+    // outputStyle は組み込み（default / Explanatory / Learning）に加えカスタムも可。自由入力とする。
+    { key: 'outputStyle', path: 'outputStyle', group: 'model', type: 'string' },
+
+    // === エージェント ===
+    // env オブジェクト内の CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS を ON/OFF するフラグ。
+    // ON で "1" を設定、OFF で当該キーを削除する（env 内の他キーには触れない）。
+    {
+        key: 'agentTeams',
+        path: 'env',
+        group: 'agent',
+        type: 'envFlag',
+        envKey: 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS',
+        onValue: '1',
+    },
+    { key: 'teammateMode', path: 'teammateMode', group: 'agent', type: 'string', choices: ['in-process', 'subprocess'] },
+    { key: 'agentPushNotifEnabled', path: 'agentPushNotifEnabled', group: 'agent', type: 'boolean' },
+
+    // === 表示・通知 ===
+    { key: 'editorMode', path: 'editorMode', group: 'display', type: 'string', choices: ['normal', 'vim'] },
+    {
+        key: 'preferredNotifChannel',
+        path: 'preferredNotifChannel',
+        group: 'display',
+        type: 'string',
+        choices: ['auto', 'terminal_bell', 'iterm2', 'iterm2_with_bell', 'kitty', 'ghostty', 'notifications_disabled'],
+    },
+    { key: 'spinnerTipsEnabled', path: 'spinnerTipsEnabled', group: 'display', type: 'boolean', defaultOn: true },
+    { key: 'showTurnDuration', path: 'showTurnDuration', group: 'display', type: 'boolean', defaultOn: true },
+    { key: 'autoScrollEnabled', path: 'autoScrollEnabled', group: 'display', type: 'boolean', defaultOn: true },
+    { key: 'awaySummaryEnabled', path: 'awaySummaryEnabled', group: 'display', type: 'boolean', defaultOn: true },
+
+    // === 動作・データ ===
+    { key: 'autoMemoryEnabled', path: 'autoMemoryEnabled', group: 'behavior', type: 'boolean', defaultOn: true },
+    { key: 'includeCoAuthoredBy', path: 'includeCoAuthoredBy', group: 'behavior', type: 'boolean', defaultOn: true },
+    { key: 'autoUpdatesChannel', path: 'autoUpdatesChannel', group: 'behavior', type: 'string', choices: ['stable', 'latest'] },
+    { key: 'cleanupPeriodDays', path: 'cleanupPeriodDays', group: 'behavior', type: 'number', min: 1 },
+];
+
+// グループの表示順（UI の見出し順）。
+export const SETTINGS_GROUP_ORDER: string[] = ['model', 'agent', 'display', 'behavior'];
 
 // 公式スキルリポジトリ（Anthropic 公式 skills）。clone/pull のソースとして使用する。
 export const OFFICIAL_SKILLS_REPO_URL = 'https://github.com/anthropics/skills.git';

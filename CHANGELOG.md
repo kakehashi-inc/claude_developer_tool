@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Edit Claude Code settings**: the Agent / Skill Manager now has a "Settings" tab where you can review and change common entries in `settings.json` - such as the default model, response language, effort level, editor mode, notification channel, auto memory, extended thinking, Co-authored-by attribution, session retention days, the experimental agent teams feature, teammate mode, and agent notifications. Some of these change on their own as you use Claude Code, so the tab lets you see the current values and override or clear them. Changes are not saved as you type; use the Save / Cancel buttons below the table (Save writes your changes, Cancel reverts to what is on disk). Only the listed entries are touched - everything else in the file is left untouched. A "Direct Edit" button on the same row lets you edit the raw JSON of the file directly and save it. This works for both the host and WSL.
+
 ## [v0.4.2] - 2026-06-07
 
 ### Added

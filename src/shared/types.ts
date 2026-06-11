@@ -173,6 +173,71 @@ export interface AssetOpResult {
     entries?: AssetEntry[];
 }
 
+// ============================================================
+// Claude Code 設定（~/.claude/settings.json）管理
+// ============================================================
+
+// 設定項目の値の型。
+// - boolean: true/false（スイッチで編集）。
+// - string:  文字列（オプションで選択肢 choices を持つ場合はセレクト）。
+// - number:  数値（オプションで min/max を持つ）。
+// - envFlag: env オブジェクト内の特定キー（envKey）の有無で ON/OFF するフラグ。
+//            ON で env[envKey] = onValue（既定 "1"）を設定、OFF で env[envKey] を削除する。
+//            env 内の他キーには触れない。値の型は boolean。
+export type SettingsFieldType = 'boolean' | 'string' | 'number' | 'envFlag';
+
+// 編集対象の 1 設定項目の定義（registry）。
+// path は settings.json 上のトップレベルキー（envMap は 'env' 固定）。
+// この registry に項目を 1 つ追加すると、読み書き・UI 表示まで反映される。
+export interface SettingsFieldSpec {
+    key: string; // i18n キー兼識別子（'teammateMode' など）
+    path: string; // settings.json 上のトップレベルキー（'teammateMode' / 'agentPushNotifEnabled' / 'env'）
+    group: string; // UI のグループ見出し用キー（'model' / 'display' / 'agent' など）。i18n: settings.group.<group>
+    type: SettingsFieldType;
+    choices?: string[]; // type='string' で選択肢を限定する場合
+    envKey?: string; // type='envFlag' のとき: env オブジェクト内の対象キー
+    onValue?: string; // type='envFlag' のとき: ON 時に設定する値（既定 '1'）
+    min?: number; // type='number' のとき: 最小値（クランプに使用）
+    max?: number; // type='number' のとき: 最大値（クランプに使用）
+    // type='boolean' のとき: 未設定時に Claude Code が実際に採用する既定値。
+    // UI で「未設定（既定: 有効/無効）」と表示するために使う。未確定なら省略する。
+    defaultOn?: boolean;
+}
+
+// 設定項目 1 件の現在値（読み取り結果）。
+// type に応じて value の中身が決まる:
+// - boolean / envFlag: boolean | undefined（envFlag は env[envKey] の有無）
+// - string:            string | undefined
+// - number:            number | undefined
+export type SettingsFieldValue = boolean | string | number | undefined;
+
+// 設定の読み取り結果（環境ごと）。
+// available=false は実 OS パスに到達できない（WSL コマンドモードで UNC 不可など）。
+export interface SettingsReadResult {
+    env: ClaudeEnvironment;
+    label: string;
+    available: boolean;
+    // 設定ファイルが存在するか（存在しなくても編集・新規作成は可能）。
+    exists: boolean;
+    // 各登録項目の現在値（key -> 値）。
+    values: Record<string, SettingsFieldValue>;
+    // 編集対象項目の定義（registry）。レンダラーはこれを使って UI を描くため、
+    // os 依存の shared/constants を import する必要がない（schema の単一ソースはメイン側）。
+    fields: SettingsFieldSpec[];
+    // 直接編集用: 設定ファイルの生 JSON テキスト全体。存在しなければ null。
+    rawJson: string | null;
+}
+
+// テーブル編集による設定保存の入力（key -> 値）。
+// 関係ない項目には触れず、登録項目のみを差分マージで反映する。
+export type SettingsValues = Record<string, SettingsFieldValue>;
+
+// 設定保存の結果。
+export interface SettingsWriteResult {
+    ok: boolean;
+    message?: string; // エラー詳細（'unavailable' / 'invalid-json' / 'write-failed' など）
+}
+
 export type UpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
 
 export interface UpdateState {

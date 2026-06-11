@@ -27,8 +27,8 @@ export function parseFrontmatter(content: string | null): ParsedFrontmatter | nu
     if (!content) {
         return null;
     }
-    // 先頭の BOM を除去
-    const text = content.replace(/^﻿/, '');
+    // 先頭の BOM を除去（U+FEFF をエスケープで表記）
+    const text = content.replace(/^\uFEFF/, '');
     const lines = text.split(/\r?\n/);
 
     // 先頭の空行をスキップ

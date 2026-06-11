@@ -107,6 +107,7 @@ export default {
         wslSection: 'WSL: {{distro}}',
         tabAgents: 'Agents',
         tabSkills: 'Skills',
+        tabSettings: 'Settings',
         col: {
             name: 'Name',
             description: 'Description',
@@ -148,6 +149,112 @@ export default {
         officialListError: 'Failed to fetch official skills',
         repoUpdating: 'Updating the official repository...',
         mdNoName: 'Could not read the name from SKILL.md',
+    },
+    settings: {
+        colItem: 'Item',
+        colValue: 'Value',
+        directEdit: 'Direct Edit',
+        directEditTitle: 'Edit settings.json directly',
+        directEditDesc:
+            'Edit the raw contents of settings.json. Saving overwrites the entire file with this content. Make sure it is valid JSON.',
+        save: 'Save',
+        cancel: 'Cancel',
+        unset: 'Not set',
+        unsetWithDefault: 'Not set (default: {{default}})',
+        enabled: 'Enabled',
+        disabled: 'Disabled',
+        saveSuccess: 'Settings saved',
+        saveError: 'Failed to save settings',
+        readError: 'Failed to load settings',
+        invalidJson: 'The JSON syntax is not valid',
+        invalidExisting: 'The existing settings.json is broken and cannot be saved. Fix it via Direct Edit.',
+        unavailable: 'Settings for this environment cannot be accessed.',
+        group: {
+            model: 'Model & Thinking',
+            display: 'Display & Notifications',
+            behavior: 'Behavior & Data',
+            agent: 'Agents',
+        },
+        field: {
+            model: {
+                label: 'Model (model)',
+                desc: 'Default model to use. Leave unset for the app default.',
+            },
+            language: {
+                label: 'Response language (language)',
+                desc: 'Preferred language for responses and voice input. Any language name is accepted (e.g. japanese, english, spanish). Empty means unset.',
+                placeholder: 'e.g. english',
+            },
+            outputStyle: {
+                label: 'Output style (outputStyle)',
+                desc: 'Output style for responses. Built-in (default / Explanatory / Learning) or a custom style. Empty means unset.',
+                placeholder: 'e.g. Explanatory',
+            },
+            effortLevel: {
+                label: 'Effort level (effortLevel)',
+                desc: 'How much effort to spend thinking. Higher means better quality but more cost.',
+            },
+            advisorModel: {
+                label: 'Advisor model (advisorModel)',
+                desc: 'Model used by the advisor tool.',
+            },
+            alwaysThinkingEnabled: {
+                label: 'Always extended thinking (alwaysThinkingEnabled)',
+                desc: 'Enables extended thinking by default for all sessions.',
+            },
+            autoMemoryEnabled: {
+                label: 'Auto memory (autoMemoryEnabled)',
+                desc: 'Enables reading and writing of auto memory.',
+            },
+            editorMode: {
+                label: 'Editor mode (editorMode)',
+                desc: 'Key bindings for the input box.',
+            },
+            preferredNotifChannel: {
+                label: 'Notifications (preferredNotifChannel)',
+                desc: 'How notifications are delivered.',
+            },
+            spinnerTipsEnabled: {
+                label: 'Spinner tips (spinnerTipsEnabled)',
+                desc: 'Shows tips in the spinner while working.',
+            },
+            showTurnDuration: {
+                label: 'Show turn duration (showTurnDuration)',
+                desc: 'Shows how long each response took.',
+            },
+            autoScrollEnabled: {
+                label: 'Auto-scroll (autoScrollEnabled)',
+                desc: 'Follows new output in fullscreen rendering.',
+            },
+            awaySummaryEnabled: {
+                label: 'Away summary (awaySummaryEnabled)',
+                desc: 'Shows a recap when you return after being away.',
+            },
+            includeCoAuthoredBy: {
+                label: 'Add Co-authored-by (includeCoAuthoredBy)',
+                desc: 'Includes the Claude Co-authored-by line in commits and PRs.',
+            },
+            autoUpdatesChannel: {
+                label: 'Update channel (autoUpdatesChannel)',
+                desc: 'Channel for auto-updates. "stable" is about a week behind and steadier; "latest" is the newest.',
+            },
+            cleanupPeriodDays: {
+                label: 'Session retention days (cleanupPeriodDays)',
+                desc: 'Deletes session files older than this many days (minimum 1; default 30 when unset).',
+            },
+            agentTeams: {
+                label: 'Agent teams (CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS)',
+                desc: 'Enables the experimental agent teams feature. ON sets "1" in env; OFF removes the entry.',
+            },
+            teammateMode: {
+                label: 'Teammate mode (teammateMode)',
+                desc: 'Execution mode for agent teams.',
+            },
+            agentPushNotifEnabled: {
+                label: 'Agent notifications (agentPushNotifEnabled)',
+                desc: 'Enables push notifications from agents.',
+            },
+        },
     },
     nav: {
         dashboard: 'Dashboard',

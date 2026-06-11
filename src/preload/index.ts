@@ -11,6 +11,9 @@ import type {
     MCPServerInfo,
     OtherCleanupReport,
     OtherCleanupSelection,
+    SettingsReadResult,
+    SettingsValues,
+    SettingsWriteResult,
     UpdateState,
 } from '../shared/types';
 
@@ -57,6 +60,14 @@ const ASSET_MANAGER_CHANNELS = {
     IS_GIT_AVAILABLE: 'asset-manager:is-git-available',
     LIST_OFFICIAL_SKILLS: 'asset-manager:list-official-skills',
     IMPORT_OFFICIAL_SKILLS: 'asset-manager:import-official-skills',
+} as const;
+
+// shared/constants.ts の SETTINGS_CHANNELS と一致させること。
+const SETTINGS_CHANNELS = {
+    GET_ENVIRONMENTS: 'settings:get-environments',
+    READ: 'settings:read',
+    WRITE: 'settings:write',
+    WRITE_RAW: 'settings:write-raw',
 } as const;
 
 type MCPServers = { enabled: MCPServerInfo[]; disabled: MCPServerInfo[] };
@@ -159,6 +170,18 @@ const api = {
 
         importOfficialSkills: (env: ClaudeEnvironment, relPaths: string[]): Promise<AssetOpResult> =>
             ipcRenderer.invoke(ASSET_MANAGER_CHANNELS.IMPORT_OFFICIAL_SKILLS, env, relPaths),
+    },
+    settings: {
+        getEnvironments: (): Promise<{ env: ClaudeEnvironment; label: string }[]> =>
+            ipcRenderer.invoke(SETTINGS_CHANNELS.GET_ENVIRONMENTS),
+
+        read: (env: ClaudeEnvironment): Promise<SettingsReadResult> => ipcRenderer.invoke(SETTINGS_CHANNELS.READ, env),
+
+        write: (env: ClaudeEnvironment, values: SettingsValues): Promise<SettingsWriteResult> =>
+            ipcRenderer.invoke(SETTINGS_CHANNELS.WRITE, env, values),
+
+        writeRaw: (env: ClaudeEnvironment, rawJson: string): Promise<SettingsWriteResult> =>
+            ipcRenderer.invoke(SETTINGS_CHANNELS.WRITE_RAW, env, rawJson),
     },
     window: {
         minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize'),

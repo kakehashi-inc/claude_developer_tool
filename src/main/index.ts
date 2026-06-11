@@ -4,12 +4,14 @@ import { ClaudeDesktopManager } from './services/ClaudeDesktopManager';
 import { ClaudeCodeManager } from './services/ClaudeCodeManager';
 import { ClaudeCleanupManager } from './services/ClaudeCleanupManager';
 import { AssetManager } from './services/AssetManager';
+import { SettingsManager } from './services/SettingsManager';
 import { WslDetector } from './services/wsl/WslDetector';
 import { UpdaterService } from './services/UpdaterService';
 import { registerClaudeDesktopHandlers } from './ipc/claudeDesktopHandlers';
 import { registerClaudeCodeHandlers } from './ipc/claudeCodeHandlers';
 import { registerClaudeCleanupHandlers } from './ipc/claudeCleanupHandlers';
 import { registerAssetManagerHandlers } from './ipc/assetManagerHandlers';
+import { registerSettingsHandlers } from './ipc/settingsHandlers';
 import { registerWindowHandlers } from './ipc/windowHandlers';
 import { registerSystemHandlers } from './ipc/systemHandlers';
 import { registerUpdaterHandlers } from './ipc/updaterHandlers';
@@ -19,6 +21,7 @@ let claudeDesktopManager: ClaudeDesktopManager;
 let claudeCodeManager: ClaudeCodeManager;
 let claudeCleanupManager: ClaudeCleanupManager;
 let assetManager: AssetManager;
+let settingsManager: SettingsManager;
 let updaterService: UpdaterService;
 
 const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
@@ -46,7 +49,9 @@ function createWindow(): void {
         // Ensure DevTools are visible in development
         try {
             mainWindow.webContents.openDevTools({ mode: 'detach' });
-        } catch {}
+        } catch {
+            // DevTools が開けない環境（本番ビルド等）は無視する。
+        }
         // Keyboard shortcuts to toggle DevTools without menu
         mainWindow.webContents.on('before-input-event', (event, input) => {
             const isToggleCombo =
@@ -91,6 +96,7 @@ if (!gotTheLock) {
         claudeCodeManager = new ClaudeCodeManager(wslDetector);
         claudeCleanupManager = new ClaudeCleanupManager(wslDetector);
         assetManager = new AssetManager(wslDetector);
+        settingsManager = new SettingsManager(wslDetector);
 
         // 自動アップデートサービスを初期化
         updaterService = new UpdaterService();
@@ -101,6 +107,7 @@ if (!gotTheLock) {
         registerClaudeCodeHandlers(claudeCodeManager);
         registerClaudeCleanupHandlers(claudeCleanupManager);
         registerAssetManagerHandlers(assetManager, () => mainWindow);
+        registerSettingsHandlers(settingsManager);
         registerWindowHandlers();
         registerSystemHandlers();
         registerUpdaterHandlers(updaterService);

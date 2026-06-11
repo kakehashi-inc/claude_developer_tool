@@ -24,6 +24,10 @@ import {
 } from '@mui/icons-material';
 import type { AssetEntry, AssetKind, AssetListReport, ClaudeEnvironment } from '../../shared/types';
 import { AssetEntriesTable, computeFitWidth, type FmColumn } from './AssetEntriesTable';
+import { SettingsSection } from './SettingsSection';
+
+// セクションのタブ値: エージェント / スキル（AssetKind）に加え、設定タブを持つ。
+type SectionTab = AssetKind | 'settings';
 
 interface Props {
     env: ClaudeEnvironment;
@@ -54,7 +58,10 @@ const OFFICIAL_COLUMNS: FmColumn[] = FRONTMATTER_COLUMNS.skills;
  */
 export const AssetManagerSection: React.FC<Props> = ({ env, onNotify }) => {
     const { t } = useTranslation();
-    const [kind, setKind] = useState<AssetKind>('agents');
+    // 表示中のタブ。'settings' のときは設定セクションを表示する。
+    const [tab, setTab] = useState<SectionTab>('agents');
+    // 資産（エージェント/スキル）操作で使う種別。設定タブでは直前の種別を保持する。
+    const kind: AssetKind = tab === 'settings' ? 'agents' : tab;
     const [reports, setReports] = useState<Record<AssetKind, AssetListReport | null>>({
         agents: null,
         skills: null,
@@ -354,16 +361,19 @@ export const AssetManagerSection: React.FC<Props> = ({ env, onNotify }) => {
     return (
         <Paper variant='outlined' sx={{ mb: 3 }}>
             <Tabs
-                value={kind}
-                onChange={(_, v: AssetKind) => setKind(v)}
+                value={tab}
+                onChange={(_, v: SectionTab) => setTab(v)}
                 sx={{ borderBottom: 1, borderColor: 'divider' }}
             >
                 <Tab value='agents' label={t('assetManager.tabAgents')} />
                 <Tab value='skills' label={t('assetManager.tabSkills')} />
+                <Tab value='settings' label={t('assetManager.tabSettings')} />
             </Tabs>
 
             <Box sx={{ p: 2 }}>
-                {report && !report.available ? (
+                {tab === 'settings' ? (
+                    <SettingsSection env={env} onNotify={onNotify} />
+                ) : report && !report.available ? (
                     <Alert severity='info'>{t('assetManager.unavailable')}</Alert>
                 ) : (
                     <>
