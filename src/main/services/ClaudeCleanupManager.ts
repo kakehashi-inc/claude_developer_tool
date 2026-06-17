@@ -12,7 +12,7 @@ import {
 } from '../../shared/types';
 import { ClaudeFs } from './wsl/ClaudeFs';
 import { WslDetector } from './wsl/WslDetector';
-import { clearYamlList, countYamlListEntries } from '../utils/yamlPreserve';
+import { clearYamlList, countYamlListEntries, needsYamlListNormalize } from '../utils/yamlPreserve';
 
 const VALID_KEYS = new Set(CLEANUP_CANDIDATES.map(c => c.key));
 const OTHER_VALID_KEYS = new Set(OTHER_CLEANUP_ITEMS.map(i => i.key));
@@ -203,8 +203,9 @@ export class ClaudeCleanupManager {
             } else if (item.action === 'yaml-list-clear' && item.yamlKey) {
                 const text = await fs.readText(item.targetPath);
                 const count = text ? countYamlListEntries(text, item.yamlKey) : 0;
-                // 登録 0 件（クリア対象が無い）項目は表示しない
-                if (count === 0) {
+                // 登録 0 件でも、`key:`（値なし）のまま未正規化なら `key: []` 化のため表示する。
+                const needsNormalize = text ? needsYamlListNormalize(text, item.yamlKey) : false;
+                if (count === 0 && !needsNormalize) {
                     continue;
                 }
                 items.push({

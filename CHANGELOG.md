@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Serena project cleanup leaves a valid empty list**: clearing Serena's registered project list now writes an empty list (`projects: []`) instead of leaving the key with no value. The previous result could be read as missing rather than empty and cause Serena to error. The cleanup option also appears when the list was already emptied in this incorrect way, so it can be corrected in one step.
+
 ## [v0.5.0] - 2026-06-11
 
 ### Added

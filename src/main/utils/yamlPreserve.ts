@@ -63,9 +63,31 @@ export function countYamlListEntries(text: string, key: string): number {
 }
 
 /**
- * 指定したトップレベルキー直下のブロックシーケンス項目（`- ...`）だけを削除し、キー行・他キー・
- * コメント・整形・改行コードはそのまま保持した文字列を返す。
- * - キーが無い / 既に空 → そのまま（変更なし）を返す（冪等）。
+ * 指定したトップレベルキーが `clearYamlList` による正規化（`key: []` 化）を要する状態かを返す。
+ * - 値なしブロック形式の `key:`（項目あり / 項目なしどちらも）がある → true（正規化が必要）。
+ * - キーが無い、または既に `key: []`（インライン空配列）→ false。
+ *
+ * `countYamlListEntries` が「項目数」を返すのに対し、こちらは「項目なしだが `key:` のまま残った
+ * 未正規化状態」も検出できる（過去バージョンでクリアし `key:` だけ残ったケースの拾い直し用）。
+ */
+export function needsYamlListNormalize(text: string, key: string): boolean {
+    const lines = text.split('\n');
+    const keyRe = keyLineRegex(key);
+    return lines.some(line => keyRe.test(line.replace(/\r$/, '')));
+}
+
+/**
+ * 指定したトップレベルキー直下のブロックシーケンス項目（`- ...`）を削除し、キー行を空配列
+ * （`key: []`）に正規化した文字列を返す。他キー・コメント・整形・改行コードはそのまま保持する。
+ *
+ * なぜ `key:`（値なし）ではなく `key: []` にするか:
+ * - 値なしの `key:` は YAML 上 `null` と解釈され、空配列を期待するツール（例: Serena の
+ *   `projects`）では「空ではなくキー欠落/不正」と見なされてエラーになるケースがある。明示的な
+ *   空配列 `[]` にすることで「空のリスト」を正しく表現する。
+ *
+ * - キーが無い → そのまま（変更なし）を返す。
+ * - 既に `key: []`（インライン空配列）→ keyLineRegex が値なし行にしかマッチしないため対象外＝変更なし（冪等）。
+ * - `key:`（値なし・項目なし）でも `key: []` に正規化する（過去に項目だけ削除して残った未修正状態の置き換え）。
  * - 対象の `- ` 行以外は一切触らない。
  */
 export function clearYamlList(text: string, key: string): string {
@@ -90,12 +112,11 @@ export function clearYamlList(text: string, key: string): string {
         end++;
     }
 
-    if (end === keyIndex + 1) {
-        // 既に空（項目なし）→ 変更しない
-        return text;
-    }
+    // キー行を `key: []` に正規化する（CRLF の \r を保持）。
+    const hadCr = lines[keyIndex].endsWith('\r');
+    lines[keyIndex] = `${key}: []${hadCr ? '\r' : ''}`;
 
-    // [keyIndex+1, end) の行だけを取り除く
+    // [keyIndex+1, end) のシーケンス項目行を取り除く
     const result = [...lines.slice(0, keyIndex + 1), ...lines.slice(end)];
     return result.join('\n');
 }
