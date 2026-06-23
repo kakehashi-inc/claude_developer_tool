@@ -57,13 +57,22 @@ export const CLAUDE_CLEANUP_CHANNELS = {
 export interface CleanupCandidateSpec {
     key: string;
     defaultChecked: boolean;
+    // expandable=true の候補は「すべて削除／個別選択」を切り替えられる。
     expandable?: boolean;
+    // expandable のときの子要素の種類。'dir'=サブディレクトリ単位（projects）、'file'=ファイル単位（plans）。
+    childKind?: 'dir' | 'file';
+    // 候補自体の種類。'dir'=ディレクトリ（既定）、'file'=単一ファイル（例: history.jsonl）。
+    kind?: 'dir' | 'file';
+    // ~/.claude 配下の実パス。key と異なる場合に指定（i18n キーにドットを使えないため history.jsonl 等で使用）。
+    path?: string;
 }
 
 // デフォルトはすべてチェック OFF（ユーザーが明示的に選択する）。
 export const CLEANUP_CANDIDATES: CleanupCandidateSpec[] = [
-    { key: 'projects', defaultChecked: false, expandable: true },
+    { key: 'projects', defaultChecked: false, expandable: true, childKind: 'dir' },
+    { key: 'plans', defaultChecked: false, expandable: true, childKind: 'file' },
     { key: 'file-history', defaultChecked: false },
+    { key: 'history', defaultChecked: false, kind: 'file', path: 'history.jsonl' },
     { key: 'shell-snapshots', defaultChecked: false },
     { key: 'cache', defaultChecked: false },
     { key: 'debug', defaultChecked: false },

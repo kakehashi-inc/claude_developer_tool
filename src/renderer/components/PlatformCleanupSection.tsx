@@ -40,8 +40,6 @@ interface Props {
     onNotify: (message: string, severity: 'success' | 'error' | 'warning') => void;
 }
 
-const PROJECTS_KEY = 'projects';
-
 // i18n キーは camelCase。ハイフン区切りキーを変換する。
 function camelKey(key: string): string {
     return key.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -60,11 +58,13 @@ export const PlatformCleanupSection: React.FC<Props> = ({ env, label, onNotify }
 
     // Claude Code 側の選択
     const [checkedDirs, setCheckedDirs] = useState<Set<string>>(new Set());
-    const [checkedProjects, setCheckedProjects] = useState<Set<string>>(new Set());
+    // expandable 候補ごとの個別選択した子要素名。キー=候補キー（projects / plans など）。
+    const [checkedChildren, setCheckedChildren] = useState<Record<string, Set<string>>>({});
     // その他ツール側の選択（項目キー）
     const [checkedOther, setCheckedOther] = useState<Set<string>>(new Set());
 
-    const [expanded, setExpanded] = useState(false);
+    // expandable 候補ごとの展開状態。
+    const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
@@ -78,7 +78,7 @@ export const PlatformCleanupSection: React.FC<Props> = ({ env, label, onNotify }
             }
         }
         setCheckedDirs(defaults);
-        setCheckedProjects(new Set());
+        setCheckedChildren({});
         setCheckedOther(new Set());
     };
 
@@ -101,9 +101,9 @@ export const PlatformCleanupSection: React.FC<Props> = ({ env, label, onNotify }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [label]);
 
-    const candidates = (report?.candidates ?? []).filter(c => c.exists);
-    const projectsCandidate = candidates.find(c => c.key === PROJECTS_KEY);
-    const projectChildren = projectsCandidate?.children ?? [];
+    // 存在し、かつ削除対象（ファイル）が 1 件以上ある候補のみ表示する。
+    // 空ディレクトリ・空ファイル（fileCount===0、例: 全削除後に残った空 projects や未使用の plans）は行を出さない。
+    const candidates = (report?.candidates ?? []).filter(c => c.exists && c.fileCount > 0);
     const otherItems = otherReport?.items ?? [];
 
     const toggleDir = (key: string) => {
@@ -116,21 +116,31 @@ export const PlatformCleanupSection: React.FC<Props> = ({ env, label, onNotify }
             }
             return next;
         });
-        if (key === PROJECTS_KEY) {
-            setCheckedProjects(new Set());
-        }
-    };
-
-    const toggleProject = (name: string) => {
-        setCheckedProjects(prev => {
-            const next = new Set(prev);
-            if (next.has(name)) {
-                next.delete(name);
-            } else {
-                next.add(name);
+        // 候補全体のチェックを切り替えたら、その候補の個別選択はリセットする。
+        setCheckedChildren(prev => {
+            if (!prev[key] || prev[key].size === 0) {
+                return prev;
             }
+            const next = { ...prev };
+            next[key] = new Set();
             return next;
         });
+    };
+
+    const toggleChild = (key: string, name: string) => {
+        setCheckedChildren(prev => {
+            const current = new Set(prev[key] ?? []);
+            if (current.has(name)) {
+                current.delete(name);
+            } else {
+                current.add(name);
+            }
+            return { ...prev, [key]: current };
+        });
+    };
+
+    const toggleExpanded = (key: string) => {
+        setExpandedKeys(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
     const toggleOther = (key: string) => {
@@ -145,25 +155,33 @@ export const PlatformCleanupSection: React.FC<Props> = ({ env, label, onNotify }
         });
     };
 
-    const projectsAllChecked = checkedDirs.has(PROJECTS_KEY);
-    const projectsIndeterminate = !projectsAllChecked && checkedProjects.size > 0;
-
     const claudeSelection = useMemo(() => {
         const dirs = Array.from(checkedDirs);
-        const projectDirs = checkedDirs.has(PROJECTS_KEY) ? [] : Array.from(checkedProjects);
-        return { dirs, projectDirs };
-    }, [checkedDirs, checkedProjects]);
+        // expandable 候補で「全体未チェック」かつ個別選択がある場合のみ childSelections に積む。
+        const childSelections: Record<string, string[]> = {};
+        for (const c of candidates) {
+            if (!c.expandable || checkedDirs.has(c.key)) {
+                continue;
+            }
+            const sel = checkedChildren[c.key];
+            if (sel && sel.size > 0) {
+                childSelections[c.key] = Array.from(sel);
+            }
+        }
+        return { dirs, childSelections };
+    }, [candidates, checkedDirs, checkedChildren]);
 
     // 選択件数（Claude Code ＋ その他ツール）
     const selectedCount = useMemo(() => {
         let count = 0;
         for (const c of candidates) {
-            if (c.key === PROJECTS_KEY) {
-                if (checkedDirs.has(PROJECTS_KEY)) {
+            if (c.expandable) {
+                if (checkedDirs.has(c.key)) {
                     count += 1;
                 } else {
+                    const sel = checkedChildren[c.key];
                     for (const child of c.children ?? []) {
-                        if (checkedProjects.has(child.name)) {
+                        if (sel?.has(child.name)) {
                             count += 1;
                         }
                     }
@@ -174,7 +192,7 @@ export const PlatformCleanupSection: React.FC<Props> = ({ env, label, onNotify }
         }
         count += checkedOther.size;
         return count;
-    }, [candidates, checkedDirs, checkedProjects, checkedOther]);
+    }, [candidates, checkedDirs, checkedChildren, checkedOther]);
 
     const canDelete = selectedCount > 0;
 
@@ -186,7 +204,8 @@ export const PlatformCleanupSection: React.FC<Props> = ({ env, label, onNotify }
         let r: CleanupEnvReport | null = report;
         let o: OtherCleanupReport | null = otherReport;
         try {
-            if (claudeSelection.dirs.length > 0 || claudeSelection.projectDirs.length > 0) {
+            const hasChildSelection = Object.values(claudeSelection.childSelections).some(a => a.length > 0);
+            if (claudeSelection.dirs.length > 0 || hasChildSelection) {
                 r = await window.api.claudeCleanup.delete(env, claudeSelection);
                 skippedCount += r.skipped?.length ?? 0;
             }
@@ -222,92 +241,101 @@ export const PlatformCleanupSection: React.FC<Props> = ({ env, label, onNotify }
 
     const hasAnyTarget = candidates.length > 0 || otherItems.length > 0;
 
-    const renderProjectsRow = (c: CleanupCandidate) => (
-        <React.Fragment key={c.key}>
-            <TableRow sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-                <TableCell padding='checkbox'>
-                    <Checkbox
-                        checked={projectsAllChecked}
-                        indeterminate={projectsIndeterminate}
-                        onChange={() => toggleDir(c.key)}
-                    />
-                </TableCell>
-                <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <IconButton size='small' onClick={() => setExpanded(e => !e)}>
-                            {expanded ? <ExpandIcon /> : <CollapseIcon />}
-                        </IconButton>
-                        <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
-                            {t(`cleanup.dir.${camelKey(c.key)}`)}
-                        </Typography>
-                    </Box>
-                </TableCell>
-                <TableCell>
-                    <Typography variant='body2' color='text.secondary'>
-                        {t(`cleanup.desc.${camelKey(c.key)}`)}
-                    </Typography>
-                </TableCell>
-                <TableCell align='right'>
-                    <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
-                        {formatCount(c.fileCount)}
-                    </Typography>
-                </TableCell>
-                <TableCell align='right'>
-                    <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
-                        {formatBytes(c.size)}
-                    </Typography>
-                </TableCell>
-            </TableRow>
-            <TableRow>
-                <TableCell sx={{ py: 0, border: 0 }} colSpan={5}>
-                    <Collapse in={expanded} timeout='auto' unmountOnExit>
-                        <Box sx={{ pl: 6, py: 1 }}>
-                            {projectChildren.length === 0 ? (
-                                <Typography variant='body2' color='text.secondary'>
-                                    {t('cleanup.noCandidates')}
-                                </Typography>
-                            ) : (
-                                <Table size='small'>
-                                    <TableBody>
-                                        {projectChildren.map(child => (
-                                            <TableRow key={child.name}>
-                                                <TableCell padding='checkbox' sx={{ border: 0 }}>
-                                                    <Checkbox
-                                                        size='small'
-                                                        checked={projectsAllChecked || checkedProjects.has(child.name)}
-                                                        disabled={projectsAllChecked}
-                                                        onChange={() => toggleProject(child.name)}
-                                                    />
-                                                </TableCell>
-                                                <TableCell sx={{ border: 0 }}>
-                                                    <Typography
-                                                        variant='body2'
-                                                        sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}
-                                                    >
-                                                        {child.name}
-                                                    </Typography>
-                                                </TableCell>
-                                                <TableCell align='right' sx={{ border: 0 }}>
-                                                    <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
-                                                        {formatCount(child.fileCount)}
-                                                    </Typography>
-                                                </TableCell>
-                                                <TableCell align='right' sx={{ border: 0 }}>
-                                                    <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
-                                                        {formatBytes(child.size)}
-                                                    </Typography>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            )}
+    // projects（サブディレクトリ単位）/ plans（ファイル単位）など expandable 候補の行。
+    // 全体チェックと、展開時の子要素（サブディレクトリ・ファイル）の個別チェックを扱う。
+    const renderExpandableRow = (c: CleanupCandidate) => {
+        const allChecked = checkedDirs.has(c.key);
+        const childSel = checkedChildren[c.key];
+        const indeterminate = !allChecked && !!childSel && childSel.size > 0;
+        const children = c.children ?? [];
+        const isExpanded = expandedKeys[c.key] ?? false;
+        return (
+            <React.Fragment key={c.key}>
+                <TableRow sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                    <TableCell padding='checkbox'>
+                        <Checkbox
+                            checked={allChecked}
+                            indeterminate={indeterminate}
+                            onChange={() => toggleDir(c.key)}
+                        />
+                    </TableCell>
+                    <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <IconButton size='small' onClick={() => toggleExpanded(c.key)}>
+                                {isExpanded ? <ExpandIcon /> : <CollapseIcon />}
+                            </IconButton>
+                            <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
+                                {t(`cleanup.dir.${camelKey(c.key)}`)}
+                            </Typography>
                         </Box>
-                    </Collapse>
-                </TableCell>
-            </TableRow>
-        </React.Fragment>
-    );
+                    </TableCell>
+                    <TableCell>
+                        <Typography variant='body2' color='text.secondary'>
+                            {t(`cleanup.desc.${camelKey(c.key)}`)}
+                        </Typography>
+                    </TableCell>
+                    <TableCell align='right'>
+                        <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
+                            {formatCount(c.fileCount)}
+                        </Typography>
+                    </TableCell>
+                    <TableCell align='right'>
+                        <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
+                            {formatBytes(c.size)}
+                        </Typography>
+                    </TableCell>
+                </TableRow>
+                <TableRow>
+                    <TableCell sx={{ py: 0, border: 0 }} colSpan={5}>
+                        <Collapse in={isExpanded} timeout='auto' unmountOnExit>
+                            <Box sx={{ pl: 6, py: 1 }}>
+                                {children.length === 0 ? (
+                                    <Typography variant='body2' color='text.secondary'>
+                                        {t('cleanup.noCandidates')}
+                                    </Typography>
+                                ) : (
+                                    <Table size='small'>
+                                        <TableBody>
+                                            {children.map(child => (
+                                                <TableRow key={child.name}>
+                                                    <TableCell padding='checkbox' sx={{ border: 0 }}>
+                                                        <Checkbox
+                                                            size='small'
+                                                            checked={allChecked || !!childSel?.has(child.name)}
+                                                            disabled={allChecked}
+                                                            onChange={() => toggleChild(c.key, child.name)}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell sx={{ border: 0 }}>
+                                                        <Typography
+                                                            variant='body2'
+                                                            sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}
+                                                        >
+                                                            {child.name}
+                                                        </Typography>
+                                                    </TableCell>
+                                                    <TableCell align='right' sx={{ border: 0 }}>
+                                                        <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
+                                                            {formatCount(child.fileCount)}
+                                                        </Typography>
+                                                    </TableCell>
+                                                    <TableCell align='right' sx={{ border: 0 }}>
+                                                        <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
+                                                            {formatBytes(child.size)}
+                                                        </Typography>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                )}
+                            </Box>
+                        </Collapse>
+                    </TableCell>
+                </TableRow>
+            </React.Fragment>
+        );
+    };
 
     const renderDirRow = (c: CleanupCandidate) => (
         <TableRow key={c.key} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
@@ -373,7 +401,7 @@ export const PlatformCleanupSection: React.FC<Props> = ({ env, label, onNotify }
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {candidates.map(c => (c.key === PROJECTS_KEY ? renderProjectsRow(c) : renderDirRow(c)))}
+                            {candidates.map(c => (c.expandable ? renderExpandableRow(c) : renderDirRow(c)))}
                         </TableBody>
                     </Table>
                 </TableContainer>

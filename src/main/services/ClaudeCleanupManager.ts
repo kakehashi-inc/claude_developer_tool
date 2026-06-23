@@ -1,4 +1,4 @@
-import { CLAUDE_DIR, CLEANUP_CANDIDATES, CLEANUP_PROJECTS_KEY, OTHER_CLEANUP_ITEMS } from '../../shared/constants';
+import { CLAUDE_DIR, CLEANUP_CANDIDATES, OTHER_CLEANUP_ITEMS } from '../../shared/constants';
 import {
     ClaudeEnvironment,
     CleanupCandidate,
@@ -20,8 +20,8 @@ const OTHER_VALID_KEYS = new Set(OTHER_CLEANUP_ITEMS.map(i => i.key));
 /**
  * Claude Code (CLI) のデータディレクトリ（~/.claude 配下）のクリーンアップを行う。
  * - 対象は履歴／キャッシュ／一時／ログのみ（CLEANUP_CANDIDATES）。
- * - projects はプロジェクト個別 + 全体の両方を削除可能。
- * - projects 以外はディレクトリごと削除（Claude Code が必要時に自動再作成する）。
+ * - expandable 候補（projects=サブディレクトリ単位 / plans=ファイル単位）は個別 + 全体の両方を削除可能。
+ * - それ以外はディレクトリごと削除（Claude Code が必要時に自動再作成する）。
  * - native とすべての Claude 入り WSL distro を環境として扱う。
  */
 export class ClaudeCleanupManager {
@@ -66,9 +66,13 @@ export class ClaudeCleanupManager {
         const candidates: CleanupCandidate[] = [];
 
         for (const spec of CLEANUP_CANDIDATES) {
-            const relPath = this.rel(spec.key);
+            const relPath = this.rel(spec.path ?? spec.key);
             const exists = await fs.exists(relPath);
-            const stats = exists ? await fs.dirStats(relPath) : { size: 0, fileCount: 0 };
+            const stats = exists
+                ? spec.kind === 'file'
+                    ? await fs.fileStats(relPath)
+                    : await fs.dirStats(relPath)
+                : { size: 0, fileCount: 0 };
 
             const candidate: CleanupCandidate = {
                 key: spec.key,
@@ -77,14 +81,24 @@ export class ClaudeCleanupManager {
                 fileCount: stats.fileCount,
                 defaultChecked: spec.defaultChecked,
                 expandable: spec.expandable,
+                childKind: spec.childKind,
             };
 
-            if (spec.key === CLEANUP_PROJECTS_KEY && exists) {
+            // expandable 候補は子要素（projects=サブディレクトリ / plans=ファイル）を個別選択できるよう展開する。
+            if (spec.expandable && spec.childKind && exists) {
                 const children: CleanupChild[] = [];
-                const subdirs = await fs.listDirs(relPath);
-                for (const name of subdirs) {
-                    const childStats = await fs.dirStats(`${relPath}/${name}`);
-                    children.push({ name, size: childStats.size, fileCount: childStats.fileCount });
+                if (spec.childKind === 'dir') {
+                    const subdirs = await fs.listDirs(relPath);
+                    for (const name of subdirs) {
+                        const childStats = await fs.dirStats(`${relPath}/${name}`);
+                        children.push({ name, size: childStats.size, fileCount: childStats.fileCount });
+                    }
+                } else {
+                    const files = await fs.listFiles(relPath);
+                    for (const name of files) {
+                        const childStats = await fs.fileStats(`${relPath}/${name}`);
+                        children.push({ name, size: childStats.size, fileCount: childStats.fileCount });
+                    }
                 }
                 children.sort((a, b) => b.size - a.size);
                 candidate.children = children;
@@ -97,48 +111,78 @@ export class ClaudeCleanupManager {
     }
 
     /**
-     * 選択されたディレクトリ/プロジェクトを削除し、再スキャン結果を返す。
+     * 選択されたディレクトリ／子要素（projects のサブディレクトリ、plans のファイル）を削除し、
+     * 再スキャン結果を返す。
      */
     async deleteSelected(env: ClaudeEnvironment, selection: CleanupSelection): Promise<CleanupEnvReport> {
         const fs = this.fsFor(env);
         // 使用中（ロック）などで完全に削除できなかった対象。例外は投げずにここへ集約して報告する。
         const skipped: string[] = [];
 
-        const deleteWholeProjects = selection.dirs.includes(CLEANUP_PROJECTS_KEY);
-
-        // projects 以外のディレクトリ（および projects 全体指定時）はディレクトリごと削除。
+        // dirs に含まれる候補はディレクトリごと削除（expandable 候補を全体指定した場合も含む）。
         // 稼働中の Claude Code がファイルを掴んでいてもベストエフォートで消せる分を消し、
         // ロック残存はスキップとして報告する（例外は投げない）。不正キーは無視。
         for (const key of selection.dirs) {
             if (!VALID_KEYS.has(key) || this.isUnsafeName(key)) {
                 continue;
             }
+            const spec = CLEANUP_CANDIDATES.find(c => c.key === key);
+            const relPath = this.rel(spec?.path ?? key);
             try {
-                const { removedAll } = await fs.removeDirBestEffort(this.rel(key));
-                if (!removedAll) {
-                    skipped.push(key);
+                if (spec?.kind === 'file') {
+                    // 単一ファイル候補（history.jsonl 等）はベストエフォート削除。残ればスキップ報告。
+                    await fs.deleteFile(relPath);
+                    if (await fs.exists(relPath)) {
+                        skipped.push(key);
+                    }
+                } else {
+                    const { removedAll } = await fs.removeDirBestEffort(relPath);
+                    if (!removedAll) {
+                        skipped.push(key);
+                    }
                 }
             } catch (error) {
-                console.error(`Failed to remove dir ${key} (${JSON.stringify(env)}):`, error);
+                console.error(`Failed to remove ${key} (${JSON.stringify(env)}):`, error);
                 skipped.push(key);
             }
         }
 
-        // projects の個別プロジェクト削除（projects 全体削除が指定されていない場合のみ）
-        if (!deleteWholeProjects) {
-            const projectsRel = this.rel(CLEANUP_PROJECTS_KEY);
-            const existing = new Set(await fs.listDirs(projectsRel));
-            for (const name of selection.projectDirs) {
+        // expandable 候補（projects=サブディレクトリ / plans=ファイル）の個別削除。
+        // 当該候補が dirs に含まれている（＝全体削除指定）場合はスキップする。
+        const childSelections = selection.childSelections ?? {};
+        for (const spec of CLEANUP_CANDIDATES) {
+            if (!spec.expandable || !spec.childKind) {
+                continue;
+            }
+            if (selection.dirs.includes(spec.key)) {
+                continue;
+            }
+            const names = childSelections[spec.key];
+            if (!names || names.length === 0) {
+                continue;
+            }
+            const baseRel = this.rel(spec.key);
+            const existing = new Set(spec.childKind === 'file' ? await fs.listFiles(baseRel) : await fs.listDirs(baseRel));
+            for (const name of names) {
                 if (this.isUnsafeName(name) || !existing.has(name)) {
                     continue;
                 }
+                const childRel = `${baseRel}/${name}`;
                 try {
-                    const { removedAll } = await fs.removeDirBestEffort(`${projectsRel}/${name}`);
-                    if (!removedAll) {
-                        skipped.push(name);
+                    if (spec.childKind === 'file') {
+                        // ファイル単位（plans）はベストエフォート削除。ロック等で残った場合はスキップ報告。
+                        await fs.deleteFile(childRel);
+                        if (await fs.exists(childRel)) {
+                            skipped.push(name);
+                        }
+                    } else {
+                        const { removedAll } = await fs.removeDirBestEffort(childRel);
+                        if (!removedAll) {
+                            skipped.push(name);
+                        }
                     }
                 } catch (error) {
-                    console.error(`Failed to remove project ${name} (${JSON.stringify(env)}):`, error);
+                    console.error(`Failed to remove child ${spec.key}/${name} (${JSON.stringify(env)}):`, error);
                     skipped.push(name);
                 }
             }

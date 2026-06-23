@@ -61,7 +61,9 @@ export default {
         columnSize: 'Size',
         dir: {
             projects: 'projects',
+            plans: 'plans',
             fileHistory: 'file-history',
+            history: 'history.jsonl',
             shellSnapshots: 'shell-snapshots',
             cache: 'cache',
             debug: 'debug',
@@ -72,7 +74,9 @@ export default {
         },
         desc: {
             projects: 'Per-project conversation history and memory (records of past sessions).',
+            plans: 'Plan files created in plan mode (records of past plans).',
             fileHistory: 'History and diffs of files edited by Claude Code, kept for undo.',
+            history: 'History of prompts you have entered (recallable with the up arrow key).',
             shellSnapshots: 'Shell environment snapshots captured to run commands.',
             cache: 'Temporary cache of the changelog and other data.',
             debug: 'Debug logs for troubleshooting.',

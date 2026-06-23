@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.5.2] - 2026-06-23
+
+### Added
+
+- **Clean up plan files**: the Claude Code cleanup screen now lists the `plans` directory (plan files created in plan mode). Like `projects`, you can delete everything at once or expand it and pick individual plan files to remove.
+- **Clean up the prompt history file**: the cleanup screen now lists `history.jsonl` (the history of prompts you have entered). Deleting it only clears the input history you can recall with the up arrow key.
+
+### Changed
+
+- **Hide empty cleanup rows**: cleanup items with nothing to delete are no longer shown. A directory that exists but contains no files (for example an empty `plans`, or `projects` after everything was removed) no longer appears as a row.
+
 ## [v0.5.1] - 2026-06-17
 
 ### Fixed

@@ -69,6 +69,8 @@ export interface CleanupCandidate {
     fileCount: number;
     defaultChecked: boolean;
     expandable?: boolean;
+    // expandable のときの子要素の種類。'dir'=サブディレクトリ（projects）、'file'=ファイル（plans）。
+    childKind?: 'dir' | 'file';
     children?: CleanupChild[];
 }
 
@@ -85,7 +87,10 @@ export interface CleanupEnvReport {
 // クリーンアップ削除の選択内容
 export interface CleanupSelection {
     dirs: string[];
-    projectDirs: string[];
+    // expandable 候補で個別選択された子要素名。キー=候補キー（projects / plans など）、
+    // 値=選択された子要素名（サブディレクトリ名・ファイル名）の配列。
+    // dirs に候補キー全体が含まれる場合、その候補の childSelections は無視される。
+    childSelections: Record<string, string[]>;
 }
 
 // 「その他のツール」クリーンアップ: 各項目が自分の掃除方法を宣言で内包する汎用モデル

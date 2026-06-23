@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync, rmSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync, rmSync, mkdirSync, statSync } from 'fs';
 import { homedir } from 'os';
 import { join, dirname } from 'path';
 import { ClaudeEnvironment } from '../../../shared/types';
@@ -321,6 +321,32 @@ export class ClaudeFs {
     /** ディレクトリの再帰サイズ（バイト）。存在しなければ 0。dirStats の薄いラッパー。 */
     async dirSize(relPath: string): Promise<number> {
         return (await this.dirStats(relPath)).size;
+    }
+
+    /** 単一ファイルのサイズ（バイト）とファイル数（存在すれば 1）。存在しなければ {0,0}。 */
+    async fileStats(relPath: string): Promise<DirStats> {
+        const abs = await this.resolveAbs(relPath);
+        if (abs !== null) {
+            try {
+                const st = statSync(abs);
+                return { size: st.size, fileCount: 1 };
+            } catch {
+                return { size: 0, fileCount: 0 };
+            }
+        }
+        // コマンドモード: stat -c %s でバイト数を取得。
+        try {
+            const lp = await this.linuxPath(relPath);
+            const buf = await this.detector.runInDistro(
+                this.distro,
+                `stat -c %s ${this.shellQuote(lp)} 2>/dev/null || echo 0`
+            );
+            const size = parseInt(buf.toString('utf8').trim(), 10);
+            const valid = Number.isFinite(size) && size > 0;
+            return { size: valid ? size : 0, fileCount: valid ? 1 : 0 };
+        } catch {
+            return { size: 0, fileCount: 0 };
+        }
     }
 
     /** ディレクトリを丸ごと削除する（再帰）。 */
