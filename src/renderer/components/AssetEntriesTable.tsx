@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { Visibility as ViewIcon } from '@mui/icons-material';
 import type { AssetEntry } from '../../shared/types';
-import { formatCount } from '../utils/format';
+import { formatCount, formatDateTime, isRecent, relativeTimeParts } from '../utils/format';
 
 // frontmatter 列の表示設定（table-layout: fixed と併用）。
 // - fit:    内容に合わせて伸縮し、maxWidth で上限を制限する（name）。上限超過は省略（…）。
@@ -72,11 +72,16 @@ interface Props {
     columns: FmColumn[];
     fitWidth: number;
     showFileCount: boolean;
+    // 最終更新日時列を表示するか（エージェント / スキルタブで true、公式ダイアログでは false）。
+    showLastModified?: boolean;
     checkedKeys: Set<string>;
     onToggle: (relPath: string) => void;
     onToggleAll: () => void;
     onView: (entry: AssetEntry) => void;
 }
+
+// 最終更新日時列の幅（px）。'YYYY-MM-DD HH:mm' ＋ NEW バッジが収まる固定幅。
+const LAST_MODIFIED_WIDTH = 140;
 
 /**
  * Agent・Skill / 公式スキルの一覧テーブル。
@@ -87,6 +92,7 @@ export const AssetEntriesTable: React.FC<Props> = ({
     columns,
     fitWidth,
     showFileCount,
+    showLastModified = false,
     checkedKeys,
     onToggle,
     onToggleAll,
@@ -121,6 +127,11 @@ export const AssetEntriesTable: React.FC<Props> = ({
                                 {t(`assetManager.col.${col.key}`)}
                             </TableCell>
                         ))}
+                        {showLastModified && (
+                            <TableCell sx={{ width: LAST_MODIFIED_WIDTH, whiteSpace: 'nowrap' }}>
+                                {t('assetManager.columnLastModified')}
+                            </TableCell>
+                        )}
                         {showFileCount && (
                             <TableCell align='right' sx={{ width: 72, whiteSpace: 'nowrap' }}>
                                 {t('assetManager.columnFiles')}
@@ -132,86 +143,144 @@ export const AssetEntriesTable: React.FC<Props> = ({
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {entries.map(entry => (
-                        <TableRow key={entry.relPath} hover>
-                            <TableCell padding='checkbox' sx={{ width: 48 }}>
-                                <Checkbox
-                                    checked={checkedKeys.has(entry.relPath)}
-                                    onChange={() => onToggle(entry.relPath)}
-                                />
-                            </TableCell>
-                            {columns.map(col => {
-                                // name 列はディレクトリ名 / ファイル名を基準に、frontmatter があれば優先。
-                                // frontmatter が未定義（古い main ビルド等）でも落ちないようガードする。
-                                const fmValue = entry.frontmatter?.[col.key];
-                                const value = fmValue ?? (col.key === 'name' ? (entry.name ?? '') : '');
-                                // name 列のみ: 親からの相対サブパス（サブディレクトリ）があれば
-                                // 名前の下に控えめ（ミュート）な色で表示してパスを判別できるようにする。
-                                const subPath = col.key === 'name' ? relSubDir(entry.relPath) : '';
-                                // name（fit 列）は 1 行で内容フィット＋maxWidth 超過を省略。
-                                // その他の列は最大 2 行まで表示して超過を省略する。
-                                const valueSx = col.fit
-                                    ? {
-                                          whiteSpace: 'nowrap' as const,
-                                          overflow: 'hidden',
-                                          textOverflow: 'ellipsis',
-                                      }
-                                    : {
-                                          display: '-webkit-box',
-                                          WebkitBoxOrient: 'vertical' as const,
-                                          WebkitLineClamp: 2,
-                                          overflow: 'hidden',
-                                          overflowWrap: 'anywhere' as const,
-                                      };
-                                return (
-                                    <TableCell
-                                        key={col.key}
-                                        sx={{
-                                            ...colWidthSx(col, fitWidth),
-                                            verticalAlign: 'top',
-                                        }}
-                                    >
-                                        <Tooltip title={value} disableHoverListener={!value}>
-                                            <Box sx={valueSx}>{value}</Box>
-                                        </Tooltip>
-                                        {subPath && (
-                                            <Tooltip title={subPath}>
-                                                <Box
-                                                    sx={{
-                                                        display: 'block',
-                                                        mt: 0.25,
-                                                        fontSize: '0.75rem',
-                                                        lineHeight: 1.3,
-                                                        color: 'text.secondary',
-                                                        whiteSpace: 'nowrap',
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                    }}
-                                                >
-                                                    {subPath}
-                                                </Box>
+                    {entries.map(entry => {
+                        const recent = isRecent(entry.mtimeMs);
+                        const relPart = relativeTimeParts(entry.mtimeMs);
+                        const relText = relPart
+                            ? t(
+                                  `assetManager.relative.${relPart.key}`,
+                                  relPart.count != null ? { count: relPart.count } : {}
+                              )
+                            : '';
+                        return (
+                            <TableRow key={entry.relPath} hover>
+                                <TableCell padding='checkbox' sx={{ width: 48 }}>
+                                    <Checkbox
+                                        checked={checkedKeys.has(entry.relPath)}
+                                        onChange={() => onToggle(entry.relPath)}
+                                    />
+                                </TableCell>
+                                {columns.map(col => {
+                                    // name 列はディレクトリ名 / ファイル名を基準に、frontmatter があれば優先。
+                                    // frontmatter が未定義（古い main ビルド等）でも落ちないようガードする。
+                                    const fmValue = entry.frontmatter?.[col.key];
+                                    const value = fmValue ?? (col.key === 'name' ? (entry.name ?? '') : '');
+                                    // name 列のみ: 親からの相対サブパス（サブディレクトリ）があれば
+                                    // 名前の下に控えめ（ミュート）な色で表示してパスを判別できるようにする。
+                                    const subPath = col.key === 'name' ? relSubDir(entry.relPath) : '';
+                                    // name（fit 列）は 1 行で内容フィット＋maxWidth 超過を省略。
+                                    // その他の列は最大 2 行まで表示して超過を省略する。
+                                    const valueSx = col.fit
+                                        ? {
+                                              whiteSpace: 'nowrap' as const,
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis',
+                                          }
+                                        : {
+                                              display: '-webkit-box',
+                                              WebkitBoxOrient: 'vertical' as const,
+                                              WebkitLineClamp: 2,
+                                              overflow: 'hidden',
+                                              overflowWrap: 'anywhere' as const,
+                                          };
+                                    return (
+                                        <TableCell
+                                            key={col.key}
+                                            sx={{
+                                                ...colWidthSx(col, fitWidth),
+                                                verticalAlign: 'top',
+                                            }}
+                                        >
+                                            <Tooltip title={value} disableHoverListener={!value}>
+                                                <Box sx={valueSx}>{value}</Box>
                                             </Tooltip>
+                                            {subPath && (
+                                                <Tooltip title={subPath}>
+                                                    <Box
+                                                        sx={{
+                                                            display: 'block',
+                                                            mt: 0.25,
+                                                            fontSize: '0.75rem',
+                                                            lineHeight: 1.3,
+                                                            color: 'text.secondary',
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                        }}
+                                                    >
+                                                        {subPath}
+                                                    </Box>
+                                                </Tooltip>
+                                            )}
+                                        </TableCell>
+                                    );
+                                })}
+                                {showLastModified && (
+                                    <TableCell sx={{ width: LAST_MODIFIED_WIDTH, verticalAlign: 'top' }}>
+                                        <Box sx={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                                            {formatDateTime(entry.mtimeMs)}
+                                        </Box>
+                                        {(recent || relText) && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                                                {recent && (
+                                                    <Box
+                                                        component='span'
+                                                        sx={{
+                                                            px: 0.75,
+                                                            py: 0.125,
+                                                            borderRadius: 0.75,
+                                                            bgcolor: 'error.main',
+                                                            color: 'error.contrastText',
+                                                            fontSize: '0.7rem',
+                                                            fontWeight: 700,
+                                                            lineHeight: 1.4,
+                                                            letterSpacing: '0.05em',
+                                                        }}
+                                                    >
+                                                        {t('assetManager.newBadge')}
+                                                    </Box>
+                                                )}
+                                                {relText && (
+                                                    <Box
+                                                        component='span'
+                                                        sx={{
+                                                            fontSize: '0.75rem',
+                                                            lineHeight: 1.3,
+                                                            color: 'text.secondary',
+                                                            whiteSpace: 'nowrap',
+                                                        }}
+                                                    >
+                                                        {relText}
+                                                    </Box>
+                                                )}
+                                            </Box>
                                         )}
                                     </TableCell>
-                                );
-                            })}
-                            {showFileCount && (
-                                <TableCell align='right' sx={{ width: 72, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
-                                    {formatCount(entry.fileCount ?? 0)}
-                                </TableCell>
-                            )}
-                            <TableCell align='center' sx={{ width: 96, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
-                                <Button
-                                    size='small'
-                                    startIcon={<ViewIcon />}
-                                    disabled={!entry.frontmatterRaw}
-                                    onClick={() => onView(entry)}
+                                )}
+                                {showFileCount && (
+                                    <TableCell
+                                        align='right'
+                                        sx={{ width: 72, whiteSpace: 'nowrap', verticalAlign: 'top' }}
+                                    >
+                                        {formatCount(entry.fileCount ?? 0)}
+                                    </TableCell>
+                                )}
+                                <TableCell
+                                    align='center'
+                                    sx={{ width: 96, whiteSpace: 'nowrap', verticalAlign: 'top' }}
                                 >
-                                    {t('assetManager.view')}
-                                </Button>
-                            </TableCell>
-                        </TableRow>
-                    ))}
+                                    <Button
+                                        size='small'
+                                        startIcon={<ViewIcon />}
+                                        disabled={!entry.frontmatterRaw}
+                                        onClick={() => onView(entry)}
+                                    >
+                                        {t('assetManager.view')}
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })}
                 </TableBody>
             </Table>
         </TableContainer>

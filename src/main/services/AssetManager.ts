@@ -132,6 +132,8 @@ export class AssetManager {
                 fileCount: stats.fileCount,
                 frontmatter: fm?.fields ?? {},
                 frontmatterRaw: fm?.raw ?? null,
+                // フォルダ単位: 配下ファイルの最終更新日時の最大値。
+                mtimeMs: stats.mtimeMs,
             });
         }
         return entries;
@@ -154,14 +156,18 @@ export class AssetManager {
                 const fileRel = `${relDir}/${file}`;
                 const relPath = fileRel.slice(parentRel.length + 1); // 親からの相対
                 // agents は 1 ファイル固定でサイズ・ファイル数を表示しないため取得しない。
+                // 最終更新日時のみファイル単位で取得する。
                 const md = await fs.readText(fileRel);
                 const fm = parseFrontmatter(md);
+                const stats = await fs.fileStats(fileRel);
                 entries.push({
                     name: file.replace(/\.md$/i, ''),
                     relPath,
                     isFile: true,
                     frontmatter: fm?.fields ?? {},
                     frontmatterRaw: fm?.raw ?? null,
+                    // ファイル単位: その .md ファイルの最終更新日時。
+                    mtimeMs: stats.mtimeMs,
                 });
             }
             // サブディレクトリを再帰
@@ -626,6 +632,7 @@ export class AssetManager {
             fileCount: stats.fileCount,
             frontmatter: fm?.fields ?? {},
             frontmatterRaw: fm?.raw ?? null,
+            mtimeMs: stats.mtimeMs,
         };
     }
 

@@ -299,22 +299,28 @@ export class ClaudeFs {
         if (abs !== null) {
             return recursiveDirStats(abs);
         }
-        // コマンドモード: du -sb（バイト）と find ... -type f | wc -l（ファイル数）
+        // コマンドモード: du -sb（バイト）/ find ... -type f | wc -l（ファイル数）/
+        // フォルダ内ファイルの最終更新時刻の最大（秒）を取得する。
         try {
             const lp = await this.linuxPath(relPath);
             const buf = await this.detector.runInDistro(
                 this.distro,
-                `du -sb ${this.shellQuote(lp)} 2>/dev/null | cut -f1 || echo 0; find ${this.shellQuote(lp)} -type f 2>/dev/null | wc -l || echo 0`
+                `du -sb ${this.shellQuote(lp)} 2>/dev/null | cut -f1 || echo 0; ` +
+                    `find ${this.shellQuote(lp)} -type f 2>/dev/null | wc -l || echo 0; ` +
+                    `find ${this.shellQuote(lp)} -type f -printf '%T@\\n' 2>/dev/null | sort -n | tail -1 || echo 0`
             );
-            const [sizeLine, countLine] = buf.toString('utf8').split(/\r?\n/);
+            const [sizeLine, countLine, mtimeLine] = buf.toString('utf8').split(/\r?\n/);
             const size = parseInt((sizeLine ?? '0').trim(), 10);
             const fileCount = parseInt((countLine ?? '0').trim(), 10);
+            // %T@ は秒（小数あり）。ミリ秒に変換する。
+            const mtimeSec = parseFloat((mtimeLine ?? '0').trim());
             return {
                 size: Number.isFinite(size) ? size : 0,
                 fileCount: Number.isFinite(fileCount) ? fileCount : 0,
+                mtimeMs: Number.isFinite(mtimeSec) ? Math.round(mtimeSec * 1000) : 0,
             };
         } catch {
-            return { size: 0, fileCount: 0 };
+            return { size: 0, fileCount: 0, mtimeMs: 0 };
         }
     }
 
@@ -329,23 +335,29 @@ export class ClaudeFs {
         if (abs !== null) {
             try {
                 const st = statSync(abs);
-                return { size: st.size, fileCount: 1 };
+                return { size: st.size, fileCount: 1, mtimeMs: st.mtimeMs };
             } catch {
-                return { size: 0, fileCount: 0 };
+                return { size: 0, fileCount: 0, mtimeMs: 0 };
             }
         }
-        // コマンドモード: stat -c %s でバイト数を取得。
+        // コマンドモード: stat -c %s（バイト数）・%Y（最終更新の秒）を取得。
         try {
             const lp = await this.linuxPath(relPath);
             const buf = await this.detector.runInDistro(
                 this.distro,
-                `stat -c %s ${this.shellQuote(lp)} 2>/dev/null || echo 0`
+                `stat -c '%s %Y' ${this.shellQuote(lp)} 2>/dev/null || echo '0 0'`
             );
-            const size = parseInt(buf.toString('utf8').trim(), 10);
+            const [sizeStr, mtimeStr] = buf.toString('utf8').trim().split(/\s+/);
+            const size = parseInt((sizeStr ?? '0').trim(), 10);
+            const mtimeSec = parseInt((mtimeStr ?? '0').trim(), 10);
             const valid = Number.isFinite(size) && size > 0;
-            return { size: valid ? size : 0, fileCount: valid ? 1 : 0 };
+            return {
+                size: valid ? size : 0,
+                fileCount: valid ? 1 : 0,
+                mtimeMs: Number.isFinite(mtimeSec) ? mtimeSec * 1000 : 0,
+            };
         } catch {
-            return { size: 0, fileCount: 0 };
+            return { size: 0, fileCount: 0, mtimeMs: 0 };
         }
     }
 

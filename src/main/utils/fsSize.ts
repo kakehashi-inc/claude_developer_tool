@@ -4,27 +4,30 @@ import { join } from 'path';
 export interface DirStats {
     size: number;
     fileCount: number;
+    // フォルダ内ファイルの最終更新日時（エポックミリ秒）の最大値。ファイルが無ければ 0。
+    mtimeMs: number;
 }
 
 /**
- * 指定ディレクトリ（絶対パス）の合計サイズ（バイト）とファイル数を再帰的に集計する。
+ * 指定ディレクトリ（絶対パス）の合計サイズ（バイト）・ファイル数・最終更新日時（最大）を再帰的に集計する。
  * - symlink はスキップして無限ループ・二重計上を防ぐ。
- * - 存在しないパスは { size: 0, fileCount: 0 } を返す。
+ * - 存在しないパスは { size: 0, fileCount: 0, mtimeMs: 0 } を返す。
  * - 読み取り不能なエントリは無視して継続する。
  */
 export function recursiveDirStats(absPath: string): DirStats {
     if (!existsSync(absPath)) {
-        return { size: 0, fileCount: 0 };
+        return { size: 0, fileCount: 0, mtimeMs: 0 };
     }
 
     let size = 0;
     let fileCount = 0;
+    let mtimeMs = 0;
 
     let entries;
     try {
         entries = readdirSync(absPath, { withFileTypes: true });
     } catch {
-        return { size: 0, fileCount: 0 };
+        return { size: 0, fileCount: 0, mtimeMs: 0 };
     }
 
     for (const entry of entries) {
@@ -40,9 +43,12 @@ export function recursiveDirStats(absPath: string): DirStats {
                 const sub = recursiveDirStats(entryPath);
                 size += sub.size;
                 fileCount += sub.fileCount;
+                mtimeMs = Math.max(mtimeMs, sub.mtimeMs);
             } else if (entry.isFile()) {
-                size += statSync(entryPath).size;
+                const st = statSync(entryPath);
+                size += st.size;
                 fileCount += 1;
+                mtimeMs = Math.max(mtimeMs, st.mtimeMs);
             } else {
                 // Dirent の種別が不明な場合は lstat で確認
                 const st = lstatSync(entryPath);
@@ -53,9 +59,11 @@ export function recursiveDirStats(absPath: string): DirStats {
                     const sub = recursiveDirStats(entryPath);
                     size += sub.size;
                     fileCount += sub.fileCount;
+                    mtimeMs = Math.max(mtimeMs, sub.mtimeMs);
                 } else if (st.isFile()) {
                     size += st.size;
                     fileCount += 1;
+                    mtimeMs = Math.max(mtimeMs, st.mtimeMs);
                 }
             }
         } catch {
@@ -63,7 +71,7 @@ export function recursiveDirStats(absPath: string): DirStats {
         }
     }
 
-    return { size, fileCount };
+    return { size, fileCount, mtimeMs };
 }
 
 /**

@@ -145,6 +145,11 @@ export interface AssetEntry {
     // frontmatter（先頭の --- で囲まれたヘッダー部）。無い場合は fields 空・raw は null。
     frontmatter: Record<string, string>;
     frontmatterRaw: string | null;
+    // 最終更新日時（エポックミリ秒）。
+    // - agents（ファイル単位）: その .md ファイルの最終更新日時。
+    // - skills（フォルダ単位）: フォルダ内ファイルの最終更新日時の最大値。
+    // 取得できない場合は 0。
+    mtimeMs: number;
 }
 
 // Agent・Skill 管理の一覧レポート（環境 × 種別）

@@ -72,7 +72,7 @@ export class ClaudeCleanupManager {
                 ? spec.kind === 'file'
                     ? await fs.fileStats(relPath)
                     : await fs.dirStats(relPath)
-                : { size: 0, fileCount: 0 };
+                : { size: 0, fileCount: 0, mtimeMs: 0 };
 
             const candidate: CleanupCandidate = {
                 key: spec.key,

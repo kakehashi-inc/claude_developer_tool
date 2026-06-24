@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [v0.5.3] - 2026-06-24
+
+### Added
+
+- **Last modified date for agents and skills**: the Agents and Skills tabs now show a "Last Modified" column after the description. For an agent it is the file's last modified time; for a skill it is the most recent modified time among the files in its folder. Below the date, a relative age is always shown (Today, Yesterday, N days ago, N months ago, N years ago). Items changed within the last 7 days are also marked with a prominent "NEW" badge so you can spot recent additions and updates at a glance.
+
+### Changed
+
+- **Simpler Agents list**: the "Tools" column has been removed from the Agents tab to keep the list focused and easier to read.
+
 ## [v0.5.2] - 2026-06-23
 
 ### Added

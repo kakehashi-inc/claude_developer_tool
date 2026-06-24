@@ -37,7 +37,6 @@ interface Props {
 const FRONTMATTER_COLUMNS: Record<AssetKind, FmColumn[]> = {
     agents: [
         { key: 'name', fit: true, maxWidthPct: 0.3 },
-        { key: 'tools', width: 200 },
         { key: 'model', width: 90 },
         { key: 'description', flex: true },
     ],
@@ -472,6 +471,7 @@ export const AssetManagerSection: React.FC<Props> = ({ env, onNotify }) => {
                                 columns={columns}
                                 fitWidth={fitWidth}
                                 showFileCount={showFileCount}
+                                showLastModified
                                 checkedKeys={checkedKeys}
                                 onToggle={toggle}
                                 onToggleAll={toggleAll}
